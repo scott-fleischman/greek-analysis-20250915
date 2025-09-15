@@ -1,0 +1,3 @@
+[submodule "external-data/SBLGNT"]
+	path = external-data/SBLGNT
+	url = https://github.com/LogosBible/SBLGNT
