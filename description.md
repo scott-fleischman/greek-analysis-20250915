@@ -16,3 +16,8 @@ The data sets final form should be in a machine-actionable format like JSON with
 
 ## Reports
 Each data set should have a report on progress, with all work broken down into small enough chunks to be done by an automated agent, with checkboxes and a link to a thorough summary for each section after it is done. The summary section should include stats of the data in that section, as well as a detailed list of what was found in each section in a human readable format.
+
+## External Data
+Start with SBLGNT, which is contained as as a submodule in this repo.
+
+Start with the Gospel of Mark, and do the full set and depth of analyses before moving to other texts.
