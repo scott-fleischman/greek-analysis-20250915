@@ -1,0 +1,126 @@
+:root {
+  color-scheme: light;
+  --bg: #f8f6f1;
+  --card-bg: #ffffff;
+  --text-primary: #231f20;
+  --text-muted: #6b5f58;
+  --accent: #96705b;
+  --border: rgba(33, 27, 24, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Gentium Plus", "Noto Serif", "Palatino Linotype", "Palatino", serif;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-shell {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem;
+}
+
+.app-header {
+  background: linear-gradient(135deg, #f3ece5, #fdfbfa 60%, #f4e7da);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-title {
+  margin: 0.25rem 0 0;
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.app-overline {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.app-subtitle {
+  margin: 0.5rem 0 0;
+  font-size: 1.15rem;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+}
+
+.app-footer {
+  margin-top: 3rem;
+  border-top: 1px solid var(--border);
+  background: rgba(244, 231, 218, 0.35);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.notice {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--accent);
+  background: rgba(150, 112, 91, 0.08);
+  color: var(--text-muted);
+  border-radius: 0.5rem;
+}
+
+.verse-list {
+  display: grid;
+  gap: 1rem;
+  margin: 2rem 0 4rem;
+}
+
+.verse {
+  display: grid;
+  grid-template-columns: minmax(6rem, 7rem) 1fr;
+  gap: 0.85rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 16px rgba(35, 31, 32, 0.04);
+}
+
+.verse-ref {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "smcp" 1;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  align-self: start;
+}
+
+.verse-text {
+  font-size: 1.25rem;
+  line-height: 1.85;
+  hyphens: auto;
+}
+
+.verse-text::first-letter {
+  font-size: 1.4em;
+  margin-right: 0.05em;
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 1.25rem 1rem;
+  }
+
+  .verse {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .verse-ref {
+    order: -1;
+  }
+}
