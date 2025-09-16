@@ -1,7 +1,7 @@
 # Gospel of Mark Viewer-Focused Plan
 
 ## 1. Text Access and Verification
-- [ ] Confirm the SBLGNT text for all books is available in the repository and document how to load it (verses, clauses, metadata).
+- [x] Confirm the SBLGNT text for all books is available in the repository and document how to load it (verses, clauses, metadata). See `docs/sblgnt-data-access.md` for coverage notes and loading examples.
 - [ ] Provide a lightweight script/notebook to inspect raw text for sanity checks before building the viewer.
 - [ ] Identify any gaps that require LLM-assisted extraction or cleaning and log them for follow-up tasks.
 
