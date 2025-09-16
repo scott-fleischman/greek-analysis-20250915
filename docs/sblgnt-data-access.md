@@ -87,4 +87,93 @@ The SBLGNT source does **not** contain clause segmentations or IDs. Future claus
 - The textual apparatus under `external-data/SBLGNT/data/sblgntapp` mirrors the verse structure and can be parsed in the same fashion; each `<note>` conveys a textual variant for the preceding `<verse>` tag.
 - The plain-text files in `external-data/SBLGNT/data/sblgnt/text` are convenient for quick manual inspection or diffing, but they do not expose the token-level metadata found in the XML.
 
+## Quick text inspection helper
+
+For rapid sanity checks without opening a notebook, use `scripts/inspect_sblgnt.py`. The script lists the available books and prints verses from either corpus with optional filters. The examples below show real output captured from the helper:
+
+```bash
+$ python scripts/inspect_sblgnt.py --list-books
+1Cor
+1John
+1Pet
+1Thess
+1Tim
+2Cor
+2John
+2Pet
+2Thess
+2Tim
+3John
+Acts
+Col
+Eph
+Gal
+Heb
+Jas
+John
+Jude
+Luke
+Mark
+Matt
+Phil
+Phlm
+Rev
+Rom
+Titus
+sblgnt
+```
+
+The trailing `sblgnt` entry represents the aggregated corpus file that the upstream project ships alongside the per-book texts.
+
+```bash
+$ python scripts/inspect_sblgnt.py --book Mark --limit 5
+Mark 1:1: Ἀρχὴ τοῦ εὐαγγελίου Ἰησοῦ ⸀χριστοῦ.
+Mark 1:2: ⸀Καθὼς γέγραπται ἐν ⸂τῷ Ἠσαΐᾳ τῷ προφήτῃ⸃·  ⸀Ἰδοὺ ἀποστέλλω τὸν ἄγγελόν μου
+          πρὸ προσώπου σου, ὃς κατασκευάσει τὴν ὁδόν ⸀σου·
+Mark 1:3: φωνὴ βοῶντος ἐν τῇ ἐρήμῳ· Ἑτοιμάσατε τὴν ὁδὸν κυρίου, εὐθείας ποιεῖτε τὰς
+          τρίβους αὐτοῦ,
+Mark 1:4: ἐγένετο Ἰωάννης ⸀ὁ βαπτίζων ἐν τῇ ⸀ἐρήμῳ κηρύσσων βάπτισμα μετανοίας εἰς
+          ἄφεσιν ἁμαρτιῶν.
+Mark 1:5: καὶ ἐξεπορεύετο πρὸς αὐτὸν πᾶσα ἡ Ἰουδαία χώρα καὶ οἱ Ἱεροσολυμῖται ⸂πάντες,
+          καὶ ἐβαπτίζοντο⸃  ⸂ὑπʼ αὐτοῦ ἐν τῷ Ἰορδάνῃ ποταμῷ⸃ ἐξομολογούμενοι τὰς
+          ἁμαρτίας αὐτῶν.
+```
+
+```bash
+$ python scripts/inspect_sblgnt.py --book Mark --source text --limit 5
+ΚΑΤΑ ΜΑΡΚΟΝ
+Mark 1:1: Ἀρχὴ τοῦ εὐαγγελίου Ἰησοῦ ⸀χριστοῦ.
+Mark 1:2: ⸀Καθὼς γέγραπται ἐν ⸂τῷ Ἠσαΐᾳ τῷ προφήτῃ⸃· ⸀Ἰδοὺ ἀποστέλλω τὸν ἄγγελόν μου πρὸ
+          προσώπου σου, ὃς κατασκευάσει τὴν ὁδόν ⸀σου·
+Mark 1:3: φωνὴ βοῶντος ἐν τῇ ἐρήμῳ· Ἑτοιμάσατε τὴν ὁδὸν κυρίου, εὐθείας ποιεῖτε τὰς
+          τρίβους αὐτοῦ,
+Mark 1:4: ἐγένετο Ἰωάννης ⸀ὁ βαπτίζων ἐν τῇ ⸀ἐρήμῳ κηρύσσων βάπτισμα μετανοίας εἰς
+          ἄφεσιν ἁμαρτιῶν.
+```
+
+```bash
+$ python scripts/inspect_sblgnt.py --book Luke --contains "Ἰησοῦ" --limit 10
+Luke 1:31: καὶ ἰδοὺ συλλήμψῃ ἐν γαστρὶ καὶ τέξῃ υἱόν, καὶ καλέσεις τὸ ὄνομα αὐτοῦ
+           Ἰησοῦν.
+Luke 2:21: Καὶ ὅτε ἐπλήσθησαν ἡμέραι ὀκτὼ τοῦ περιτεμεῖν αὐτόν, καὶ ἐκλήθη τὸ ὄνομα
+           αὐτοῦ Ἰησοῦς, τὸ κληθὲν ὑπὸ τοῦ ἀγγέλου πρὸ τοῦ συλλημφθῆναι αὐτὸν ἐν τῇ
+           κοιλίᾳ.
+Luke 2:27: καὶ ἦλθεν ἐν τῷ πνεύματι εἰς τὸ ἱερόν· καὶ ἐν τῷ εἰσαγαγεῖν τοὺς γονεῖς τὸ
+           παιδίον Ἰησοῦν τοῦ ποιῆσαι αὐτοὺς κατὰ τὸ εἰθισμένον τοῦ νόμου περὶ αὐτοῦ
+Luke 2:43: καὶ τελειωσάντων τὰς ἡμέρας, ἐν τῷ ὑποστρέφειν αὐτοὺς ὑπέμεινεν Ἰησοῦς ὁ παῖς
+           ἐν Ἰερουσαλήμ, καὶ οὐκ ⸂ἔγνωσαν οἱ γονεῖς⸃ αὐτοῦ.
+Luke 2:52: Καὶ Ἰησοῦς προέκοπτεν ⸂σοφίᾳ καὶ ἡλικίᾳ⸃ καὶ χάριτι παρὰ θεῷ καὶ ἀνθρώποις.
+Luke 3:21: Ἐγένετο δὲ ἐν τῷ βαπτισθῆναι ἅπαντα τὸν λαὸν καὶ Ἰησοῦ βαπτισθέντος καὶ
+           προσευχομένου ἀνεῳχθῆναι τὸν οὐρανὸν
+Luke 3:23: Καὶ αὐτὸς ⸀ἦν Ἰησοῦς ⸂ἀρχόμενος ὡσεὶ ἐτῶν τριάκοντα⸃, ὢν ⸂υἱός, ὡς
+           ἐνομίζετο⸃, Ἰωσὴφ τοῦ Ἠλὶ
+Luke 3:29: τοῦ ⸀Ἰησοῦ τοῦ Ἐλιέζερ τοῦ Ἰωρὶμ τοῦ Μαθθὰτ τοῦ Λευὶ
+Luke 4:1: Ἰησοῦς δὲ ⸂πλήρης πνεύματος ἁγίου⸃ ὑπέστρεψεν ἀπὸ τοῦ Ἰορδάνου, καὶ ἤγετο ἐν
+          τῷ πνεύματι ⸂ἐν τῇ ἐρήμῳ⸃
+Luke 4:4: καὶ ἀπεκρίθη ⸂πρὸς αὐτὸν ὁ Ἰησοῦς⸃· Γέγραπται ὅτι Οὐκ ἐπʼ ἄρτῳ μόνῳ ζήσεται ⸀ὁ
+          ⸀ἄνθρωπος.
+```
+
+Use `--show-paragraphs` to include paragraph indices derived from the XML structure in the output; this makes it easy to verify paragraph transitions while reviewing the text.
+
 These notes provide the baseline needed for the next tasks (scripts, viewer prototype, clause schema decisions) to consume the SBLGNT corpus consistently.
