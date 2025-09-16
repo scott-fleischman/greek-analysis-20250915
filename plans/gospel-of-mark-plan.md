@@ -3,7 +3,7 @@
 ## 1. Text Access and Verification
 - [x] Confirm the SBLGNT text for all books is available in the repository and document how to load it (verses, clauses, metadata). See `docs/sblgnt-data-access.md` for coverage notes and loading examples.
 - [x] Provide a lightweight script/notebook to inspect raw text for sanity checks before building the viewer. (`scripts/inspect_sblgnt.py` renders verses from both the plain-text and XML corpora, with filters for substring search and starting references.)
-- [ ] Identify any gaps that require LLM-assisted extraction or cleaning and log them for follow-up tasks.
+- [x] Identify any gaps that require LLM-assisted extraction or cleaning and log them for follow-up tasks.
 
 ## 2. Core HTML Viewer
 - [ ] Draft a minimal HTML/CSS scaffold that renders beautifully formatted Greek text for a selected book (start with Mark).
