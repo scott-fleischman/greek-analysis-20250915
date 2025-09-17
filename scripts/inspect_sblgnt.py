@@ -41,6 +41,38 @@ TEXT_DIR = REPO_ROOT / "external-data" / "SBLGNT" / "data" / "sblgnt" / "text"
 XML_DIR = REPO_ROOT / "external-data" / "SBLGNT" / "data" / "sblgnt" / "xml"
 
 
+def _resolve_source_paths(source: str) -> tuple[Path, str]:
+    """Return the directory/suffix for ``source`` and ensure data is present."""
+
+    if source == "text":
+        directory = TEXT_DIR
+        suffix = ".txt"
+    else:
+        directory = XML_DIR
+        suffix = ".xml"
+
+    if not directory.exists():
+        instructions = (
+            f"SBLGNT {source} corpus not found at {directory}.\n"
+            "Run `git submodule update --init --recursive` or extend your "
+            "environment setup script to download the corpus before "
+            "running this helper."
+        )
+        raise SystemExit(instructions)
+
+    if not any(directory.glob(f"*{suffix}")):
+        instructions = (
+            f"SBLGNT {source} corpus at {directory} does not contain any "
+            f"{suffix} files.\n"
+            "Ensure the submodule has been fully populated (e.g. by running "
+            "`git submodule update --init --recursive`) or provide a local "
+            "corpus path via TEXT_DIR/XML_DIR."
+        )
+        raise SystemExit(instructions)
+
+    return directory, suffix
+
+
 @dataclass
 class Verse:
     """Structured representation of a verse for display."""
@@ -59,8 +91,7 @@ def list_books(directory: Path, suffix: str) -> List[str]:
 def ensure_book(book: str, source: str) -> None:
     """Validate that the selected book exists for the requested source."""
 
-    directory = TEXT_DIR if source == "text" else XML_DIR
-    suffix = ".txt" if source == "text" else ".xml"
+    directory, suffix = _resolve_source_paths(source)
     if not (directory / f"{book}{suffix}").exists():
         options = list_books(directory, suffix)
         message = (
@@ -273,8 +304,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parse_args(argv)
 
-    directory = TEXT_DIR if args.source == "text" else XML_DIR
-    suffix = ".txt" if args.source == "text" else ".xml"
+    directory, suffix = _resolve_source_paths(args.source)
 
     if args.list_books:
         books = list_books(directory, suffix)
