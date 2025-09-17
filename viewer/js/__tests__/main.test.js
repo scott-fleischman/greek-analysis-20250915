@@ -17,6 +17,7 @@ class MockElement {
     this._textContent = "";
     this._innerHTML = "";
     this.eventListeners = new Map();
+    this.attributes = new Map();
     this.value = "";
     this.disabled = false;
   }
@@ -40,6 +41,31 @@ class MockElement {
       this.children.push(node);
     }
     return node;
+  }
+
+  setAttribute(name, value) {
+    if (typeof name !== "string") {
+      return;
+    }
+    const normalizedName = name.toLowerCase();
+    const stringValue = value === undefined ? "" : String(value);
+    this.attributes.set(normalizedName, stringValue);
+  }
+
+  getAttribute(name) {
+    if (typeof name !== "string") {
+      return null;
+    }
+    const normalizedName = name.toLowerCase();
+    return this.attributes.has(normalizedName) ? this.attributes.get(normalizedName) : null;
+  }
+
+  removeAttribute(name) {
+    if (typeof name !== "string") {
+      return;
+    }
+    const normalizedName = name.toLowerCase();
+    this.attributes.delete(normalizedName);
   }
 
   get textContent() {
@@ -244,11 +270,22 @@ test("renderVerses populates the container", () => {
   const { doc, containerEl } = buildDocument();
   const viewer = createViewer({ document: doc });
 
+  assert.equal(containerEl.dataset.state, "idle");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(containerEl.dataset.loadingText, "Loading the SBLGNT text…");
+  assert.equal(containerEl.dataset.emptyText, "No verse data available.");
+  assert.equal(
+    containerEl.dataset.errorText,
+    "Unable to load the Gospel of Mark at this time."
+  );
+
   viewer.renderVerses([
     { reference: "Mk 1:1", text: "Ἀρχὴ τοῦ εὐαγγελίου" },
     { reference: "Mk 1:2", text: "καθὼς γέγραπται" },
   ]);
 
+  assert.equal(containerEl.dataset.state, "ready");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
   assert.equal(containerEl.children.length, 2);
   const [firstVerse] = containerEl.children;
   assert.equal(firstVerse.className, "verse");
@@ -266,7 +303,7 @@ test("renderVerses exits early when the container is missing", () => {
   viewer.renderVerses([{ reference: "Mk 1:1", text: "Ἀρχὴ" }]);
 
   assert.equal(statusEl.textContent, "");
-  assert.equal(statusEl.style.display, undefined);
+  assert.equal(statusEl.style.display, "none");
 });
 
 test("renderVerses shows an error when the data is empty", () => {
@@ -279,6 +316,8 @@ test("renderVerses shows an error when the data is empty", () => {
   assert.equal(statusEl.textContent, "No verse data available.");
   assert.equal(statusEl.style.borderLeftColor, "#a23b3b");
   assert.equal(containerEl.children.length, 0);
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
 });
 
 test("loadBook fetches the data and updates the document", async () => {
@@ -287,6 +326,9 @@ test("loadBook fetches the data and updates the document", async () => {
     ok: true,
     status: 200,
     async json() {
+      assert.equal(containerEl.dataset.state, "loading");
+      assert.equal(containerEl.getAttribute("aria-busy"), "true");
+      assert.equal(statusEl.textContent, "Loading the SBLGNT text…");
       return {
         display_name: "Gospel of Mark",
         header: "A fast-paced narrative",
@@ -300,6 +342,8 @@ test("loadBook fetches the data and updates the document", async () => {
 
   const viewer = createViewer({ document: doc, fetch: fetchMock });
 
+  assert.equal(containerEl.dataset.state, "idle");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
   const payload = await viewer.loadBook();
 
   assert.equal(fetchMock.mock.calls.length, 1);
@@ -311,11 +355,13 @@ test("loadBook fetches the data and updates the document", async () => {
   assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
   assert.equal(statusEl.textContent, "");
   assert.equal(statusEl.style.display, "none");
+  assert.equal(containerEl.dataset.state, "ready");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
   assert.equal(containerEl.children.length, 1);
 });
 
 test("loadBook reports failures and leaves an error message", async () => {
-  const { doc, statusEl } = buildDocument();
+  const { doc, statusEl, containerEl } = buildDocument();
   const consoleMock = { error: mock.fn() };
   const fetchMock = mock.fn(async () => ({ ok: false, status: 503, async json() {} }));
 
@@ -327,11 +373,13 @@ test("loadBook reports failures and leaves an error message", async () => {
   assert.equal(statusEl.textContent, "Unable to load the Gospel of Mark at this time.");
   assert.equal(statusEl.style.display, "block");
   assert.equal(statusEl.style.borderLeftColor, "#a23b3b");
+  assert.equal(containerEl.dataset.state, "error");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
   assert.equal(consoleMock.error.mock.calls.length, 1);
 });
 
 test("loadBook tolerates console objects without an error method", async () => {
-  const { doc, statusEl } = buildDocument();
+  const { doc, statusEl, containerEl } = buildDocument();
   const fetchMock = mock.fn(async () => ({ ok: false, status: 500, async json() {} }));
 
   const viewer = createViewer({ document: doc, fetch: fetchMock, console: {} });
@@ -341,6 +389,8 @@ test("loadBook tolerates console objects without an error method", async () => {
   assert.equal(result, null);
   assert.equal(statusEl.style.display, "block");
   assert.equal(statusEl.textContent, "Unable to load the Gospel of Mark at this time.");
+  assert.equal(containerEl.dataset.state, "error");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
 });
 
 test("loadBook returns null when display elements are not available", async () => {
@@ -358,7 +408,7 @@ test("loadBook returns null when display elements are not available", async () =
 });
 
 test("loadBook handles a missing fetch implementation", async () => {
-  const { doc, statusEl } = buildDocument();
+  const { doc, statusEl, containerEl } = buildDocument();
   const consoleMock = { error: mock.fn() };
 
   const viewer = createViewer({ document: doc, fetch: null, console: consoleMock });
@@ -368,6 +418,8 @@ test("loadBook handles a missing fetch implementation", async () => {
   assert.equal(result, null);
   assert.equal(statusEl.textContent, "Unable to load the Gospel of Mark at this time.");
   assert.equal(consoleMock.error.mock.calls.length, 1);
+  assert.equal(containerEl.dataset.state, "error");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
 });
 
 test("init returns false when required elements are missing", () => {
@@ -378,7 +430,7 @@ test("init returns false when required elements are missing", () => {
 });
 
 test("init waits for DOMContentLoaded when the document is loading", async () => {
-  const { doc, selectorEl, sourcePathEl } = buildDocument();
+  const { doc, selectorEl, sourcePathEl, containerEl, statusEl } = buildDocument();
   doc.readyState = "loading";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
@@ -433,10 +485,13 @@ test("init waits for DOMContentLoaded when the document is loading", async () =>
   assert.equal(selectorEl.disabled, false);
   assert.equal(selectorEl.value, "mark");
   assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
+  assert.equal(containerEl.dataset.state, "ready");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "");
 });
 
 test("init triggers a load immediately when the document is ready", async () => {
-  const { doc, selectorEl, sourcePathEl } = buildDocument();
+  const { doc, selectorEl, sourcePathEl, containerEl, statusEl } = buildDocument();
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
       return {
@@ -485,10 +540,13 @@ test("init triggers a load immediately when the document is ready", async () => 
   assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
   assert.equal(selectorEl.disabled, false);
   assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "No verse data available.");
 });
 
 test("changing the selector triggers a new book load", async () => {
-  const { doc, selectorEl, displayEl, sourcePathEl } = buildDocument();
+  const { doc, selectorEl, displayEl, sourcePathEl, containerEl, statusEl } = buildDocument();
   doc.readyState = "complete";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
@@ -560,6 +618,9 @@ test("changing the selector triggers a new book load", async () => {
   assert.equal(selectorEl.value, "mark");
   assert.equal(displayEl.textContent, "Gospel of Mark");
   assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
+  assert.equal(containerEl.dataset.state, "ready");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "");
 
   selectorEl.value = "matthew";
   selectorEl.dispatchEvent({ type: "change" });
@@ -570,10 +631,13 @@ test("changing the selector triggers a new book load", async () => {
   assert.equal(selectorEl.value, "matthew");
   assert.equal(displayEl.textContent, "Gospel of Matthew");
   assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Matt.txt");
+  assert.equal(containerEl.dataset.state, "ready");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "");
 });
 
 test("viewer skips manifest loading when the selector is absent", async () => {
-  const { doc, sourcePathEl } = buildDocument({ includeSelector: false });
+  const { doc, sourcePathEl, statusEl, containerEl } = buildDocument({ includeSelector: false });
   doc.readyState = "complete";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/mark.json") {
@@ -602,10 +666,13 @@ test("viewer skips manifest loading when the selector is absent", async () => {
   assert.equal(fetchMock.mock.calls.length, 1);
   assert.equal(fetchMock.mock.calls[0].arguments[0], "data/mark.json");
   assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "No verse data available.");
 });
 
 test("init falls back to book loading when the manifest request fails", async () => {
-  const { doc, selectorEl, statusEl, sourcePathEl } = buildDocument();
+  const { doc, selectorEl, statusEl, sourcePathEl, containerEl } = buildDocument();
   doc.readyState = "complete";
   const consoleMock = { error: mock.fn() };
   const fetchMock = mock.fn(async (url) => {
@@ -648,12 +715,14 @@ test("init falls back to book loading when the manifest request fails", async ()
   assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
   assert.equal(selectorEl.disabled, true);
   assert.equal(consoleMock.error.mock.calls.length, 1);
-  assert.equal(statusEl.textContent, "");
+  assert.equal(statusEl.textContent, "No verse data available.");
   assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
 });
 
 test("loadManifest filters invalid entries and normalizes keys", async () => {
-  const { doc, selectorEl, displayEl, sourcePathEl } = buildDocument();
+  const { doc, selectorEl, displayEl, sourcePathEl, containerEl, statusEl } = buildDocument();
   doc.readyState = "complete";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
@@ -725,6 +794,9 @@ test("loadManifest filters invalid entries and normalizes keys", async () => {
   assert.equal(selectorEl.value, "luke");
   assert.equal(displayEl.textContent, "Luke");
   assert.equal(sourcePathEl.textContent, "data/luke.txt");
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "No verse data available.");
 
   selectorEl.value = "acts";
   selectorEl.dispatchEvent({ type: "change" });
@@ -734,6 +806,9 @@ test("loadManifest filters invalid entries and normalizes keys", async () => {
   assert.equal(fetchMock.mock.calls[2].arguments[0], "data/acts.json");
   assert.equal(displayEl.textContent, "Acts of the Apostles");
   assert.equal(sourcePathEl.textContent, "data/acts.txt");
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "No verse data available.");
 });
 
 test("loadManifest returns null when the selector element is absent", async () => {
@@ -820,7 +895,7 @@ test("loadManifest rejects manifests without usable entries", async () => {
 });
 
 test("selectBook ignores unknown ids and supports skipLoad", async () => {
-  const { doc, selectorEl, sourcePathEl } = buildDocument();
+  const { doc, selectorEl, sourcePathEl, containerEl, statusEl } = buildDocument();
   doc.readyState = "complete";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
@@ -867,6 +942,9 @@ test("selectBook ignores unknown ids and supports skipLoad", async () => {
   await flushAsyncOperations();
 
   assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "No verse data available.");
 
   const baselineCalls = fetchMock.mock.calls.length;
 
@@ -877,6 +955,8 @@ test("selectBook ignores unknown ids and supports skipLoad", async () => {
   const skipResult = await viewer.selectBook(selectorEl.value, { skipLoad: true });
   assert.equal(skipResult, null);
   assert.equal(fetchMock.mock.calls.length, baselineCalls);
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(statusEl.textContent, "No verse data available.");
 
   selectorEl.value = "unlisted";
   selectorEl.dispatchEvent({ type: "change" });
@@ -889,12 +969,15 @@ test("selectBook ignores unknown ids and supports skipLoad", async () => {
   await flushAsyncOperations();
 
   assert.equal(fetchMock.mock.calls.length, baselineCalls + 1);
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "No verse data available.");
 });
 
 test("browser build initializes itself in a window context", async () => {
   const filePath = path.join(__dirname, "../main.js");
   const source = fs.readFileSync(filePath, "utf8");
-  const { doc, selectorEl, sourcePathEl } = buildDocument();
+  const { doc, selectorEl, sourcePathEl, containerEl, statusEl } = buildDocument();
   doc.readyState = "loading";
 
   const fetchMock = mock.fn(async (url) => {
@@ -967,10 +1050,13 @@ test("browser build initializes itself in a window context", async () => {
   assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
   assert.equal(selectorEl.disabled, false);
   assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
+  assert.equal(containerEl.dataset.state, "ready");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "");
 });
 
 test("bootstrap attaches the viewer to the provided global object", async () => {
-  const { doc, selectorEl, sourcePathEl } = buildDocument();
+  const { doc, selectorEl, sourcePathEl, containerEl, statusEl } = buildDocument();
   doc.readyState = "loading";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
@@ -1027,11 +1113,14 @@ test("bootstrap attaches the viewer to the provided global object", async () => 
   assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
   assert.equal(selectorEl.disabled, false);
   assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
+  assert.equal(containerEl.dataset.state, "ready");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "");
 });
 
 
 test("configure updates the data url and status messages", async () => {
-  const { doc, statusEl } = buildDocument();
+  const { doc, statusEl, containerEl } = buildDocument();
   const fetchMock = mock.fn(async () => ({
     ok: true,
     status: 200,
@@ -1052,6 +1141,12 @@ test("configure updates the data url and status messages", async () => {
   assert.equal(initialConfig.dataUrl, "data/mark.json");
   assert.equal(initialConfig.manifestUrl, "data/manifest.json");
   assert.equal(initialConfig.statusMessages.empty, "No verse data available.");
+  assert.equal(containerEl.dataset.loadingText, "Loading the SBLGNT text…");
+  assert.equal(containerEl.dataset.emptyText, "No verse data available.");
+  assert.equal(
+    containerEl.dataset.errorText,
+    "Unable to load the Gospel of Mark at this time."
+  );
 
   const updatedConfig = viewer.configure({
     dataUrl: "data/custom.json",
@@ -1066,18 +1161,25 @@ test("configure updates the data url and status messages", async () => {
   assert.equal(updatedConfig.manifestUrl, "data/alt-manifest.json");
   assert.equal(updatedConfig.statusMessages.empty, "Nothing to display.");
   assert.equal(updatedConfig.statusMessages.loading, "Loading custom data…");
+  assert.equal(containerEl.dataset.emptyText, "Nothing to display.");
+  assert.equal(containerEl.dataset.loadingText, "Loading custom data…");
 
   viewer.renderVerses([]);
   assert.equal(statusEl.textContent, "Nothing to display.");
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
 
   const payload = await viewer.loadBook();
   assert.ok(payload);
   assert.equal(fetchMock.mock.calls.length, 1);
   assert.deepEqual(fetchMock.mock.calls[0].arguments, ["data/custom.json", { cache: "no-cache" }]);
+  assert.equal(containerEl.dataset.state, "ready");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "");
 });
 
 test("configure ignores invalid updates", () => {
-  const { doc } = buildDocument();
+  const { doc, containerEl } = buildDocument();
   const viewer = createViewer({ document: doc });
 
   const configAfterInvalid = viewer.configure({
@@ -1089,15 +1191,18 @@ test("configure ignores invalid updates", () => {
   assert.equal(configAfterInvalid.manifestUrl, "data/manifest.json");
   assert.equal(configAfterInvalid.statusMessages.empty, "No verse data available.");
   assert.equal(configAfterInvalid.statusMessages.loading, "Loading the SBLGNT text…");
+  assert.equal(containerEl.dataset.emptyText, "No verse data available.");
+  assert.equal(containerEl.dataset.loadingText, "Loading the SBLGNT text…");
 
   const snapshot = viewer.configure("not-an-object");
   assert.equal(snapshot.dataUrl, "data/mark.json");
   assert.equal(snapshot.manifestUrl, "data/manifest.json");
   assert.equal(snapshot.statusMessages.loading, "Loading the SBLGNT text…");
+  assert.equal(containerEl.dataset.loadingText, "Loading the SBLGNT text…");
 });
 
 test("bootstrap reads viewer config from the global object", async () => {
-  const { doc, statusEl } = buildDocument();
+  const { doc, statusEl, containerEl } = buildDocument();
   doc.readyState = "complete";
   const fetchMock = mock.fn(async () => ({
     ok: true,
@@ -1137,17 +1242,24 @@ test("bootstrap reads viewer config from the global object", async () => {
   assert.equal(snapshot.dataUrl, "data/acts.json");
   assert.equal(snapshot.manifestUrl, "data/custom-manifest.json");
   assert.equal(snapshot.statusMessages.loading, "Loading Acts…");
+  assert.equal(containerEl.dataset.loadingText, "Loading Acts…");
+  assert.equal(containerEl.dataset.emptyText, "Acts data unavailable.");
 
   const loadPromise = viewerInstance.loadBook();
   assert.equal(statusEl.textContent, "Loading Acts…");
+  assert.equal(containerEl.dataset.state, "loading");
+  assert.equal(containerEl.getAttribute("aria-busy"), "true");
   await loadPromise;
 
   assert.equal(fetchMock.mock.calls.length, 1);
   assert.equal(fetchMock.mock.calls[0].arguments[0], "data/acts.json");
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "Acts data unavailable.");
 });
 
 test("bootstrap accepts a configuration object as the first argument", async () => {
-  const { doc, selectorEl } = buildDocument();
+  const { doc, selectorEl, containerEl, statusEl } = buildDocument();
   doc.readyState = "loading";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/custom-manifest.json") {
@@ -1206,6 +1318,8 @@ test("bootstrap accepts a configuration object as the first argument", async () 
   const config = viewerInstance.configure();
   assert.equal(config.dataUrl, "data/john.json");
   assert.equal(config.manifestUrl, "data/custom-manifest.json");
+  assert.equal(containerEl.dataset.loadingText, "Loading the SBLGNT text…");
+  assert.equal(containerEl.dataset.emptyText, "No verse data available.");
 
   viewerInstance.init();
   doc.dispatchEvent({ type: "DOMContentLoaded" });
@@ -1217,10 +1331,13 @@ test("bootstrap accepts a configuration object as the first argument", async () 
   assert.equal(fetchMock.mock.calls[1].arguments[0], "data/john.json");
   assert.equal(selectorEl.disabled, false);
   assert.equal(selectorEl.value, "john");
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "No verse data available.");
 });
 
 test("bootstrap merges optional configuration arguments", async () => {
-  const { doc, selectorEl } = buildDocument();
+  const { doc, selectorEl, containerEl, statusEl } = buildDocument();
   doc.readyState = "loading";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/custom-manifest.json") {
@@ -1277,10 +1394,13 @@ test("bootstrap merges optional configuration arguments", async () => {
   assert.equal(fetchMock.mock.calls[0].arguments[0], "data/custom-manifest.json");
   assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
   assert.equal(selectorEl.disabled, false);
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "No verse data available.");
 });
 
 test("bootstrap allows overriding the global target via optional arguments", async () => {
-  const { doc, selectorEl } = buildDocument();
+  const { doc, selectorEl, containerEl, statusEl } = buildDocument();
   doc.readyState = "loading";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/custom-manifest.json") {
@@ -1339,10 +1459,13 @@ test("bootstrap allows overriding the global target via optional arguments", asy
   assert.equal(fetchMock.mock.calls[0].arguments[0], "data/custom-manifest.json");
   assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
   assert.equal(selectorEl.disabled, false);
+  assert.equal(containerEl.dataset.state, "empty");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(statusEl.textContent, "No verse data available.");
 });
 
 test("bootstrap falls back to the global window object", async () => {
-  const { doc, selectorEl } = buildDocument();
+  const { doc, selectorEl, containerEl, statusEl } = buildDocument();
   doc.readyState = "loading";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
@@ -1398,6 +1521,9 @@ test("bootstrap falls back to the global window object", async () => {
     assert.equal(fetchMock.mock.calls[0].arguments[0], "data/manifest.json");
     assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
     assert.equal(selectorEl.disabled, false);
+    assert.equal(containerEl.dataset.state, "empty");
+    assert.equal(containerEl.getAttribute("aria-busy"), "false");
+    assert.equal(statusEl.textContent, "No verse data available.");
   } finally {
     globalThis.window = originalWindow;
   }
