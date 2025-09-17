@@ -426,8 +426,11 @@ test("renderVerses toggles the reference jump controls", () => {
   assert.equal(referenceJumpForm.getAttribute("aria-disabled"), "true");
   assert.equal(referenceJumpForm.dataset.state, "disabled");
   assert.equal(referenceChapterInput.disabled, true);
+  assert.equal(referenceChapterInput.getAttribute("disabled"), "");
   assert.equal(referenceVerseInput.disabled, true);
+  assert.equal(referenceVerseInput.getAttribute("disabled"), "");
   assert.equal(referenceJumpSubmit.disabled, true);
+  assert.equal(referenceJumpSubmit.getAttribute("disabled"), "");
   assert.equal(referenceJumpHint.textContent, "Jump controls will be enabled after the text loads.");
 
   viewer.renderVerses([
@@ -438,8 +441,11 @@ test("renderVerses toggles the reference jump controls", () => {
   assert.equal(referenceJumpForm.getAttribute("aria-disabled"), "false");
   assert.equal(referenceJumpForm.dataset.state, "ready");
   assert.equal(referenceChapterInput.disabled, false);
+  assert.equal(referenceChapterInput.getAttribute("disabled"), null);
   assert.equal(referenceVerseInput.disabled, false);
+  assert.equal(referenceVerseInput.getAttribute("disabled"), null);
   assert.equal(referenceJumpSubmit.disabled, false);
+  assert.equal(referenceJumpSubmit.getAttribute("disabled"), null);
   assert.equal(referenceChapterInput.value, "");
   assert.equal(referenceVerseInput.value, "");
   assert.equal(
@@ -452,8 +458,11 @@ test("renderVerses toggles the reference jump controls", () => {
   assert.equal(referenceJumpForm.getAttribute("aria-disabled"), "true");
   assert.equal(referenceJumpForm.dataset.state, "disabled");
   assert.equal(referenceChapterInput.disabled, true);
+  assert.equal(referenceChapterInput.getAttribute("disabled"), "");
   assert.equal(referenceVerseInput.disabled, true);
+  assert.equal(referenceVerseInput.getAttribute("disabled"), "");
   assert.equal(referenceJumpSubmit.disabled, true);
+  assert.equal(referenceJumpSubmit.getAttribute("disabled"), "");
   assert.equal(referenceJumpHint.textContent, "Jump controls will be enabled after the text loads.");
 });
 

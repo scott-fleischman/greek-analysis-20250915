@@ -248,6 +248,29 @@
         : "Jump controls will be enabled after the text loads.";
     }
 
+    function setElementDisabledState(element, shouldDisable) {
+      if (!element) {
+        return;
+      }
+
+      const resolvedDisabled = !!shouldDisable;
+
+      if ("disabled" in element) {
+        element.disabled = resolvedDisabled;
+      }
+
+      const hasAttributeControls =
+        typeof element.setAttribute === "function" && typeof element.removeAttribute === "function";
+
+      if (hasAttributeControls) {
+        if (resolvedDisabled) {
+          element.setAttribute("disabled", "");
+        } else {
+          element.removeAttribute("disabled");
+        }
+      }
+    }
+
     function setReferenceControlsEnabled(nextEnabled) {
       const resolved = !!nextEnabled;
       viewerState.referenceControlsEnabled = resolved;
@@ -257,17 +280,11 @@
         referenceJumpForm.setAttribute("aria-disabled", resolved ? "false" : "true");
       }
 
-      if (referenceChapterInput) {
-        referenceChapterInput.disabled = !resolved;
-      }
+      const shouldDisable = !resolved;
 
-      if (referenceVerseInput) {
-        referenceVerseInput.disabled = !resolved;
-      }
-
-      if (referenceJumpSubmit) {
-        referenceJumpSubmit.disabled = !resolved;
-      }
+      setElementDisabledState(referenceChapterInput, shouldDisable);
+      setElementDisabledState(referenceVerseInput, shouldDisable);
+      setElementDisabledState(referenceJumpSubmit, shouldDisable);
 
       updateReferenceHint(resolved);
     }
@@ -367,9 +384,7 @@
     resetReferenceInputs();
     setReferenceControlsEnabled(false);
 
-    if (selectorEl) {
-      selectorEl.disabled = true;
-    }
+    setElementDisabledState(selectorEl, true);
 
     function normalizeBookEntry(entry) {
       if (!entry || typeof entry !== "object") {
@@ -742,9 +757,7 @@
           ? overrideUrl.trim()
           : viewerState.manifestUrl;
 
-      if (selectorEl) {
-        selectorEl.disabled = true;
-      }
+      setElementDisabledState(selectorEl, true);
 
       try {
         if (!fetchFn) {
@@ -778,15 +791,13 @@
           normalizedBooks.find((book) => book.dataUrl === viewerState.dataUrl) || normalizedBooks[0];
 
         updateSelectorOptions(normalizedBooks, matchingBook.bookId);
-        selectorEl.disabled = false;
+        setElementDisabledState(selectorEl, false);
 
         await selectBook(matchingBook.bookId);
         return manifestData;
       } catch (error) {
         safeConsole.error(error);
-        if (selectorEl) {
-          selectorEl.disabled = true;
-        }
+        setElementDisabledState(selectorEl, true);
         return null;
       }
     }
