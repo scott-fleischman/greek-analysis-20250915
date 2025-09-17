@@ -7,6 +7,14 @@
       "data_url": "data/mark.json",
       "header": "ΚΑΤΑ ΜΑΡΚΟΝ",
       "source_path": "external-data/SBLGNT/data/sblgnt/text/Mark.txt"
+    },
+    {
+      "book_id": "matthew",
+      "display_name": "Gospel of Matthew",
+      "data_path": "matthew.json",
+      "data_url": "data/matthew.json",
+      "header": "ΚΑΤΑ ΜΑΘΘΑΙΟΝ",
+      "source_path": "external-data/SBLGNT/data/sblgnt/text/Matt.txt"
     }
   ],
   "version": 1,

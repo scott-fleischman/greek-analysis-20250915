@@ -198,12 +198,13 @@ function buildDocument({ includeSelector = true } = {}) {
   const containerEl = doc.register("text-container", new MockElement("section"));
   const displayEl = doc.register("book-display", new MockElement("h1"));
   const headerEl = doc.register("book-header", new MockElement("p"));
+  const sourcePathEl = doc.register("book-source-path", new MockElement("code"));
   let selectorEl = null;
   if (includeSelector) {
     selectorEl = doc.register("book-selector", new MockElement("select"));
     selectorEl.disabled = true;
   }
-  return { doc, statusEl, containerEl, displayEl, headerEl, selectorEl };
+  return { doc, statusEl, containerEl, displayEl, headerEl, sourcePathEl, selectorEl };
 }
 
 async function flushAsyncOperations() {
@@ -281,7 +282,7 @@ test("renderVerses shows an error when the data is empty", () => {
 });
 
 test("loadBook fetches the data and updates the document", async () => {
-  const { doc, statusEl, displayEl, headerEl, containerEl } = buildDocument();
+  const { doc, statusEl, displayEl, headerEl, containerEl, sourcePathEl } = buildDocument();
   const fetchMock = mock.fn(async () => ({
     ok: true,
     status: 200,
@@ -289,6 +290,7 @@ test("loadBook fetches the data and updates the document", async () => {
       return {
         display_name: "Gospel of Mark",
         header: "A fast-paced narrative",
+        source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
         verses: [
           { reference: "Mk 1:1", text: "Ἀρχὴ τοῦ εὐαγγελίου" },
         ],
@@ -306,6 +308,7 @@ test("loadBook fetches the data and updates the document", async () => {
   assert.equal(displayEl.textContent, "Gospel of Mark");
   assert.equal(headerEl.textContent, "A fast-paced narrative");
   assert.equal(doc.title, "Gospel of Mark · SBLGNT Viewer");
+  assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
   assert.equal(statusEl.textContent, "");
   assert.equal(statusEl.style.display, "none");
   assert.equal(containerEl.children.length, 1);
@@ -375,7 +378,7 @@ test("init returns false when required elements are missing", () => {
 });
 
 test("init waits for DOMContentLoaded when the document is loading", async () => {
-  const { doc, selectorEl } = buildDocument();
+  const { doc, selectorEl, sourcePathEl } = buildDocument();
   doc.readyState = "loading";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
@@ -389,6 +392,7 @@ test("init waits for DOMContentLoaded when the document is loading", async () =>
                 book_id: "mark",
                 display_name: "Gospel of Mark",
                 data_url: "data/mark.json",
+                source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
               },
             ],
           };
@@ -404,6 +408,7 @@ test("init waits for DOMContentLoaded when the document is loading", async () =>
           return {
             display_name: "Mark",
             header: "",
+            source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
             verses: [{ reference: "Mk 1:1", text: "Ἀρχὴ" }],
           };
         },
@@ -427,10 +432,11 @@ test("init waits for DOMContentLoaded when the document is loading", async () =>
   assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
   assert.equal(selectorEl.disabled, false);
   assert.equal(selectorEl.value, "mark");
+  assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
 });
 
 test("init triggers a load immediately when the document is ready", async () => {
-  const { doc, selectorEl } = buildDocument();
+  const { doc, selectorEl, sourcePathEl } = buildDocument();
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
       return {
@@ -443,6 +449,7 @@ test("init triggers a load immediately when the document is ready", async () => 
                 book_id: "mark",
                 display_name: "Gospel of Mark",
                 data_url: "data/mark.json",
+                source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
               },
             ],
           };
@@ -458,6 +465,7 @@ test("init triggers a load immediately when the document is ready", async () => 
           return {
             display_name: "Mark",
             header: "",
+            source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
             verses: [],
           };
         },
@@ -476,10 +484,11 @@ test("init triggers a load immediately when the document is ready", async () => 
   assert.equal(fetchMock.mock.calls[0].arguments[0], "data/manifest.json");
   assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
   assert.equal(selectorEl.disabled, false);
+  assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
 });
 
 test("changing the selector triggers a new book load", async () => {
-  const { doc, selectorEl, displayEl } = buildDocument();
+  const { doc, selectorEl, displayEl, sourcePathEl } = buildDocument();
   doc.readyState = "complete";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
@@ -493,11 +502,13 @@ test("changing the selector triggers a new book load", async () => {
                 book_id: "mark",
                 display_name: "Gospel of Mark",
                 data_url: "data/mark.json",
+                source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
               },
               {
                 book_id: "matthew",
                 display_name: "Gospel of Matthew",
                 data_url: "data/matthew.json",
+                source_path: "external-data/SBLGNT/data/sblgnt/text/Matt.txt",
               },
             ],
           };
@@ -513,6 +524,7 @@ test("changing the selector triggers a new book load", async () => {
           return {
             display_name: "Gospel of Mark",
             header: "",
+            source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
             verses: [{ reference: "Mk 1:1", text: "Ἀρχὴ" }],
           };
         },
@@ -527,6 +539,7 @@ test("changing the selector triggers a new book load", async () => {
           return {
             display_name: "Gospel of Matthew",
             header: "",
+            source_path: "external-data/SBLGNT/data/sblgnt/text/Matt.txt",
             verses: [{ reference: "Mt 1:1", text: "Βίβλος" }],
           };
         },
@@ -546,6 +559,7 @@ test("changing the selector triggers a new book load", async () => {
   assert.equal(selectorEl.children.length, 2);
   assert.equal(selectorEl.value, "mark");
   assert.equal(displayEl.textContent, "Gospel of Mark");
+  assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
 
   selectorEl.value = "matthew";
   selectorEl.dispatchEvent({ type: "change" });
@@ -555,10 +569,11 @@ test("changing the selector triggers a new book load", async () => {
   assert.equal(fetchMock.mock.calls[2].arguments[0], "data/matthew.json");
   assert.equal(selectorEl.value, "matthew");
   assert.equal(displayEl.textContent, "Gospel of Matthew");
+  assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Matt.txt");
 });
 
 test("viewer skips manifest loading when the selector is absent", async () => {
-  const { doc } = buildDocument({ includeSelector: false });
+  const { doc, sourcePathEl } = buildDocument({ includeSelector: false });
   doc.readyState = "complete";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/mark.json") {
@@ -569,6 +584,7 @@ test("viewer skips manifest loading when the selector is absent", async () => {
           return {
             display_name: "Mark",
             header: "",
+            source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
             verses: [],
           };
         },
@@ -585,10 +601,11 @@ test("viewer skips manifest loading when the selector is absent", async () => {
 
   assert.equal(fetchMock.mock.calls.length, 1);
   assert.equal(fetchMock.mock.calls[0].arguments[0], "data/mark.json");
+  assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
 });
 
 test("init falls back to book loading when the manifest request fails", async () => {
-  const { doc, selectorEl, statusEl } = buildDocument();
+  const { doc, selectorEl, statusEl, sourcePathEl } = buildDocument();
   doc.readyState = "complete";
   const consoleMock = { error: mock.fn() };
   const fetchMock = mock.fn(async (url) => {
@@ -610,6 +627,7 @@ test("init falls back to book loading when the manifest request fails", async ()
           return {
             display_name: "Mark",
             header: "",
+            source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
             verses: [],
           };
         },
@@ -631,10 +649,11 @@ test("init falls back to book loading when the manifest request fails", async ()
   assert.equal(selectorEl.disabled, true);
   assert.equal(consoleMock.error.mock.calls.length, 1);
   assert.equal(statusEl.textContent, "");
+  assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
 });
 
 test("loadManifest filters invalid entries and normalizes keys", async () => {
-  const { doc, selectorEl, displayEl } = buildDocument();
+  const { doc, selectorEl, displayEl, sourcePathEl } = buildDocument();
   doc.readyState = "complete";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
@@ -646,11 +665,12 @@ test("loadManifest filters invalid entries and normalizes keys", async () => {
             books: [
               null,
               { book_id: "   ", data_url: "data/ignored.json" },
-              { book_id: "luke", data_url: "data/luke.json" },
+              { book_id: "luke", data_url: "data/luke.json", source_path: "data/luke.txt" },
               {
                 bookId: "acts",
                 dataUrl: "data/acts.json",
                 displayName: "Acts of the Apostles",
+                sourcePath: "data/acts.txt",
               },
               { book_id: "invalid", data_url: "   " },
             ],
@@ -667,6 +687,7 @@ test("loadManifest filters invalid entries and normalizes keys", async () => {
           return {
             display_name: "Luke",
             header: "",
+            source_path: "data/luke.txt",
             verses: [],
           };
         },
@@ -681,6 +702,7 @@ test("loadManifest filters invalid entries and normalizes keys", async () => {
           return {
             display_name: "Acts of the Apostles",
             header: "",
+            source_path: "data/acts.txt",
             verses: [],
           };
         },
@@ -702,6 +724,7 @@ test("loadManifest filters invalid entries and normalizes keys", async () => {
   assert.equal(selectorEl.children[1].textContent, "Acts of the Apostles");
   assert.equal(selectorEl.value, "luke");
   assert.equal(displayEl.textContent, "Luke");
+  assert.equal(sourcePathEl.textContent, "data/luke.txt");
 
   selectorEl.value = "acts";
   selectorEl.dispatchEvent({ type: "change" });
@@ -710,6 +733,7 @@ test("loadManifest filters invalid entries and normalizes keys", async () => {
   assert.equal(fetchMock.mock.calls.length, 3);
   assert.equal(fetchMock.mock.calls[2].arguments[0], "data/acts.json");
   assert.equal(displayEl.textContent, "Acts of the Apostles");
+  assert.equal(sourcePathEl.textContent, "data/acts.txt");
 });
 
 test("loadManifest returns null when the selector element is absent", async () => {
@@ -796,7 +820,7 @@ test("loadManifest rejects manifests without usable entries", async () => {
 });
 
 test("selectBook ignores unknown ids and supports skipLoad", async () => {
-  const { doc, selectorEl } = buildDocument();
+  const { doc, selectorEl, sourcePathEl } = buildDocument();
   doc.readyState = "complete";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
@@ -810,6 +834,7 @@ test("selectBook ignores unknown ids and supports skipLoad", async () => {
                 book_id: "mark",
                 display_name: "Gospel of Mark",
                 data_url: "data/mark.json",
+                source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
               },
             ],
           };
@@ -825,6 +850,7 @@ test("selectBook ignores unknown ids and supports skipLoad", async () => {
           return {
             display_name: "Gospel of Mark",
             header: "",
+            source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
             verses: [],
           };
         },
@@ -839,6 +865,8 @@ test("selectBook ignores unknown ids and supports skipLoad", async () => {
   viewer.init();
   await flushAsyncOperations();
   await flushAsyncOperations();
+
+  assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
 
   const baselineCalls = fetchMock.mock.calls.length;
 
@@ -866,7 +894,7 @@ test("selectBook ignores unknown ids and supports skipLoad", async () => {
 test("browser build initializes itself in a window context", async () => {
   const filePath = path.join(__dirname, "../main.js");
   const source = fs.readFileSync(filePath, "utf8");
-  const { doc, selectorEl } = buildDocument();
+  const { doc, selectorEl, sourcePathEl } = buildDocument();
   doc.readyState = "loading";
 
   const fetchMock = mock.fn(async (url) => {
@@ -881,6 +909,7 @@ test("browser build initializes itself in a window context", async () => {
                 book_id: "mark",
                 display_name: "Gospel of Mark",
                 data_url: "data/mark.json",
+                source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
               },
             ],
           };
@@ -896,6 +925,7 @@ test("browser build initializes itself in a window context", async () => {
           return {
             display_name: "Mark",
             header: "",
+            source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
             verses: [{ reference: "Mk 1:1", text: "Ἀρχὴ" }],
           };
         },
@@ -936,10 +966,11 @@ test("browser build initializes itself in a window context", async () => {
   assert.equal(fetchMock.mock.calls[0].arguments[0], "data/manifest.json");
   assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
   assert.equal(selectorEl.disabled, false);
+  assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
 });
 
 test("bootstrap attaches the viewer to the provided global object", async () => {
-  const { doc, selectorEl } = buildDocument();
+  const { doc, selectorEl, sourcePathEl } = buildDocument();
   doc.readyState = "loading";
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/manifest.json") {
@@ -953,6 +984,7 @@ test("bootstrap attaches the viewer to the provided global object", async () => 
                 book_id: "mark",
                 display_name: "Gospel of Mark",
                 data_url: "data/mark.json",
+                source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
               },
             ],
           };
@@ -968,6 +1000,7 @@ test("bootstrap attaches the viewer to the provided global object", async () => 
           return {
             display_name: "Mark",
             header: "",
+            source_path: "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
             verses: [{ reference: "Mk 1:1", text: "Ἀρχὴ" }],
           };
         },
@@ -993,6 +1026,7 @@ test("bootstrap attaches the viewer to the provided global object", async () => 
   assert.equal(fetchMock.mock.calls[0].arguments[0], "data/manifest.json");
   assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
   assert.equal(selectorEl.disabled, false);
+  assert.equal(sourcePathEl.textContent, "external-data/SBLGNT/data/sblgnt/text/Mark.txt");
 });
 
 
