@@ -27,3 +27,12 @@ jobs:
         run: |
           coverage run -m pytest
           coverage report
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run viewer tests
+        working-directory: viewer
+        run: npm test
