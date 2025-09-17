@@ -62,6 +62,7 @@
       selectedBookId: null,
       manifestLoaded: false,
       sourcePath: "",
+      containerState: "idle",
     };
 
     const statusEl = doc ? doc.getElementById("viewer-status") : null;
@@ -71,6 +72,36 @@
     const selectorEl = doc ? doc.getElementById("book-selector") : null;
     const sourcePathEl = doc ? doc.getElementById("book-source-path") : null;
     const safeConsole = resolveConsole(consoleObj);
+
+    function syncContainerMessageAttributes() {
+      if (!containerEl) {
+        return;
+      }
+
+      containerEl.dataset.loadingText = viewerState.messages.loading;
+      containerEl.dataset.emptyText = viewerState.messages.empty;
+      containerEl.dataset.errorText = viewerState.messages.error;
+    }
+
+    function updateContainerState(nextState) {
+      if (!containerEl) {
+        return;
+      }
+
+      const resolvedState =
+        typeof nextState === "string" && nextState.trim() ? nextState.trim() : "idle";
+
+      viewerState.containerState = resolvedState;
+      containerEl.dataset.state = resolvedState;
+
+      if (typeof containerEl.setAttribute === "function") {
+        const isLoading = resolvedState === "loading";
+        containerEl.setAttribute("aria-busy", isLoading ? "true" : "false");
+      }
+    }
+
+    syncContainerMessageAttributes();
+    updateContainerState(viewerState.containerState);
 
     if (selectorEl) {
       selectorEl.disabled = true;
@@ -173,16 +204,21 @@
       }
     }
 
+    setStatus("");
+
     function renderVerses(verses) {
+      const hasContainer = !!containerEl && !!doc;
+
       if (!Array.isArray(verses) || verses.length === 0) {
-        setStatus(viewerState.messages.empty, true);
-        if (containerEl) {
+        if (hasContainer) {
           containerEl.innerHTML = "";
+          updateContainerState("empty");
         }
+        setStatus(viewerState.messages.empty, true);
         return;
       }
 
-      if (!containerEl || !doc) {
+      if (!hasContainer) {
         return;
       }
 
@@ -207,6 +243,7 @@
       }
 
       containerEl.appendChild(fragment);
+      updateContainerState("ready");
     }
 
     async function loadBook(loadOptions = {}) {
@@ -221,6 +258,10 @@
           ? overrideUrl
           : viewerState.dataUrl;
 
+      updateContainerState("loading");
+      if (containerEl) {
+        containerEl.innerHTML = "";
+      }
       setStatus(viewerState.messages.loading);
 
       try {
@@ -258,12 +299,16 @@
           sourcePathEl.textContent = viewerState.sourcePath || "";
         }
 
+        const hasVerses = Array.isArray(payload.verses) && payload.verses.length > 0;
         renderVerses(payload.verses);
-        setStatus("");
+        if (hasVerses) {
+          setStatus("");
+        }
         return payload;
       } catch (error) {
         safeConsole.error(error);
         setStatus(viewerState.messages.error, true);
+        updateContainerState("error");
         return null;
       }
     }
@@ -386,6 +431,8 @@
       }
 
       const startViewer = async () => {
+        updateContainerState("loading");
+        setStatus(viewerState.messages.loading);
         if (selectorEl) {
           const manifestResult = await loadManifest();
           if (!manifestResult) {
@@ -431,6 +478,7 @@
           ...viewerState.messages,
           ...normalizedMessages,
         };
+        syncContainerMessageAttributes();
       }
 
       return {
