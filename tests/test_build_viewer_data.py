@@ -13,7 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from scripts.build_viewer_data import build_payload, parse_verses
+from scripts.build_viewer_data import build_payload, parse_verses, update_manifest
 
 
 @pytest.fixture
@@ -126,3 +126,126 @@ def test_main_supports_overrides(tmp_path: Path, sample_lines: list[str]) -> Non
     assert payload["book_id"] == "GospelMark"
     assert payload["display_name"] == "Κατὰ Μᾶρκον"
     assert payload["source_path"].endswith("Mark.txt")
+
+
+def test_main_generates_manifest(tmp_path: Path, sample_lines: list[str]) -> None:
+    input_file = tmp_path / "Mark.txt"
+    input_file.write_text("\n".join(sample_lines), encoding="utf-8")
+    output_file = tmp_path / "viewer" / "data" / "mark.json"
+
+    _run_cli([str(input_file), str(output_file)])
+
+    manifest_file = output_file.parent / "manifest.json"
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+
+    assert manifest["version"] == 1
+    assert manifest["generated_at"].endswith("+00:00")
+    assert len(manifest["books"]) == 1
+
+    entry = manifest["books"][0]
+    assert entry["book_id"] == "mark"
+    assert entry["display_name"] == "Mark"
+    assert entry["data_path"] == "mark.json"
+    assert entry["data_url"] == "data/mark.json"
+
+
+def test_manifest_updates_existing_entry(tmp_path: Path, sample_lines: list[str]) -> None:
+    manifest_dir = tmp_path / "viewer" / "data"
+    manifest_dir.mkdir(parents=True)
+    manifest_file = manifest_dir / "manifest.json"
+    manifest_file.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "generated_at": "2023-01-01T00:00:00+00:00",
+                "books": [
+                    {
+                        "book_id": "mark",
+                        "display_name": "Legacy Mark",
+                        "data_path": "mark.json",
+                        "data_url": "data/mark.json",
+                    },
+                    {
+                        "book_id": "acts",
+                        "display_name": "Acts",
+                        "data_path": "acts.json",
+                        "data_url": "data/acts.json",
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    input_file = tmp_path / "MarkGreek.txt"
+    input_file.write_text("\n".join(sample_lines), encoding="utf-8")
+    output_file = manifest_dir / "mark.json"
+
+    _run_cli(
+        [
+            str(input_file),
+            str(output_file),
+            "--display-name",
+            "Κατὰ Μᾶρκον",
+            "--book-id",
+            "mark",
+        ]
+    )
+
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+
+    assert len(manifest["books"]) == 2
+    assert manifest["generated_at"] != "2023-01-01T00:00:00+00:00"
+
+    mark_entry = next(book for book in manifest["books"] if book.get("book_id") == "mark")
+    acts_entry = next(book for book in manifest["books"] if book.get("book_id") == "acts")
+
+    assert mark_entry["display_name"] == "Κατὰ Μᾶρκον"
+    assert acts_entry["data_path"] == "acts.json"
+
+
+def test_update_manifest_rejects_invalid_json(tmp_path: Path) -> None:
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("{not valid json}", encoding="utf-8")
+    payload_path = tmp_path / "mark.json"
+    payload = {"book_id": "mark", "display_name": "Mark"}
+
+    with pytest.raises(ValueError, match="contains invalid JSON"):
+        update_manifest(manifest_path, payload_path, payload)
+
+
+def test_update_manifest_requires_json_object(tmp_path: Path) -> None:
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(["not", "an", "object"]), encoding="utf-8")
+    payload_path = tmp_path / "mark.json"
+    payload = {"book_id": "mark", "display_name": "Mark"}
+
+    with pytest.raises(ValueError, match="must contain a JSON object"):
+        update_manifest(manifest_path, payload_path, payload)
+
+
+def test_update_manifest_handles_non_list_books_and_external_payload(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "viewer" / "data"
+    manifest_dir.mkdir(parents=True)
+    manifest_path = manifest_dir / "manifest.json"
+    manifest_path.write_text(json.dumps({"books": {"unexpected": True}}), encoding="utf-8")
+
+    payload_path = tmp_path / "other" / "mark.json"
+    payload_path.parent.mkdir(parents=True)
+    payload = {
+        "book_id": "mark",
+        "display_name": "Mark",
+        "header": "Header",
+        "source_path": "source.txt",
+    }
+
+    update_manifest(manifest_path, payload_path, payload)
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["version"] == 1
+    assert manifest["books"]
+
+    entry = manifest["books"][0]
+    assert entry["book_id"] == "mark"
+    assert entry["data_path"] == "mark.json"
+    assert entry["data_url"] == "data/mark.json"
