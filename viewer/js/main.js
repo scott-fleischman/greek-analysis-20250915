@@ -239,6 +239,10 @@
       selectedBookId: null,
       manifestLoaded: false,
       sourcePath: "",
+      clauseDataUrl: "",
+      clausePayload: null,
+      clauseLookup: new Map(),
+      clausesAvailable: false,
       containerState: "idle",
       navigationIndex: createEmptyNavigationIndex(),
       activeReference: "",
@@ -464,12 +468,21 @@
             : "";
       const sourcePath = rawSourcePath.trim();
 
+      const rawClauseDataUrl =
+        typeof entry.clause_data_url === "string"
+          ? entry.clause_data_url
+          : typeof entry.clauseDataUrl === "string"
+            ? entry.clauseDataUrl
+            : "";
+      const clauseDataUrl = rawClauseDataUrl.trim();
+
       return {
         bookId,
         dataUrl,
         displayName,
         header,
         sourcePath,
+        clauseDataUrl,
       };
     }
 
@@ -517,6 +530,238 @@
     }
 
     setStatus("");
+    clearClauseState();
+
+    function clearClauseState() {
+      viewerState.clausePayload = null;
+      viewerState.clauseLookup = new Map();
+      viewerState.clausesAvailable = false;
+    }
+
+    function buildClauseLookup(clausePayload) {
+      const lookup = new Map();
+
+      if (!clausePayload || typeof clausePayload !== "object") {
+        return lookup;
+      }
+
+      const verseRegistry = new Map();
+      if (Array.isArray(clausePayload.verses)) {
+        for (const verseEntry of clausePayload.verses) {
+          if (!verseEntry || typeof verseEntry !== "object") {
+            continue;
+          }
+
+          const reference =
+            typeof verseEntry.reference === "string" && verseEntry.reference.trim()
+              ? verseEntry.reference.trim()
+              : "";
+          if (!reference) {
+            continue;
+          }
+
+          const charCount =
+            typeof verseEntry.character_count === "number" && Number.isFinite(verseEntry.character_count)
+              ? verseEntry.character_count
+              : null;
+
+          verseRegistry.set(reference, {
+            characterCount: charCount,
+          });
+        }
+      }
+
+      if (!Array.isArray(clausePayload.clauses)) {
+        return lookup;
+      }
+
+      for (const clause of clausePayload.clauses) {
+        if (!clause || typeof clause !== "object") {
+          continue;
+        }
+
+        const clauseId =
+          typeof clause.clause_id === "string" && clause.clause_id.trim() ? clause.clause_id.trim() : "";
+        const clauseFunction =
+          typeof clause.function === "string" && clause.function.trim() ? clause.function.trim() : "";
+
+        const references = Array.isArray(clause.references)
+          ? clause.references
+              .map((reference) => (typeof reference === "string" && reference.trim() ? reference.trim() : ""))
+              .filter(Boolean)
+          : [];
+
+        if (references.length === 0) {
+          continue;
+        }
+
+        const startOffset =
+          clause.start && typeof clause.start.offset === "number" && Number.isFinite(clause.start.offset)
+            ? Math.max(0, clause.start.offset)
+            : 0;
+        const endOffset =
+          clause.end && typeof clause.end.offset === "number" && Number.isFinite(clause.end.offset)
+            ? Math.max(startOffset, clause.end.offset)
+            : startOffset;
+
+        for (let index = 0; index < references.length; index += 1) {
+          const reference = references[index];
+          if (!reference) {
+            continue;
+          }
+
+          const verseMeta = verseRegistry.get(reference);
+          const charCount =
+            verseMeta && typeof verseMeta.characterCount === "number" ? verseMeta.characterCount : null;
+
+          let rangeStart = 0;
+          let rangeEnd = charCount !== null ? charCount : endOffset;
+
+          if (references.length === 1) {
+            rangeStart = startOffset;
+            rangeEnd = endOffset;
+          } else if (index === 0) {
+            rangeStart = startOffset;
+            rangeEnd = charCount !== null ? charCount : endOffset;
+          } else if (index === references.length - 1) {
+            rangeStart = 0;
+            rangeEnd = endOffset;
+          } else {
+            rangeStart = 0;
+            rangeEnd = charCount !== null ? charCount : rangeEnd;
+          }
+
+          const categoryTags = Array.isArray(clause.category_tags)
+            ? clause.category_tags
+                .map((tag) => (typeof tag === "string" && tag.trim() ? tag.trim() : ""))
+                .filter(Boolean)
+            : [];
+
+          const normalizedRange = {
+            clauseId,
+            startOffset: rangeStart,
+            endOffset: rangeEnd,
+            categoryTags,
+            description: clauseFunction,
+          };
+
+          if (!lookup.has(reference)) {
+            lookup.set(reference, []);
+          }
+          lookup.get(reference).push(normalizedRange);
+        }
+      }
+
+      for (const ranges of lookup.values()) {
+        ranges.sort((a, b) => {
+          if (a.startOffset !== b.startOffset) {
+            return a.startOffset - b.startOffset;
+          }
+          if (a.endOffset !== b.endOffset) {
+            return a.endOffset - b.endOffset;
+          }
+          return a.clauseId.localeCompare(b.clauseId);
+        });
+      }
+
+      return lookup;
+    }
+
+    function updateClauseState(clausePayload) {
+      if (!clausePayload || typeof clausePayload !== "object") {
+        clearClauseState();
+        return;
+      }
+
+      viewerState.clausePayload = clausePayload;
+      viewerState.clauseLookup = buildClauseLookup(clausePayload);
+      viewerState.clausesAvailable = viewerState.clauseLookup.size > 0;
+    }
+
+    function getClauseRangesForReference(reference) {
+      if (typeof reference !== "string" || !reference.trim()) {
+        return [];
+      }
+
+      const ranges = viewerState.clauseLookup.get(reference.trim()) || [];
+      return ranges.map((range) => ({
+        clauseId: range.clauseId,
+        startOffset: range.startOffset,
+        endOffset: range.endOffset,
+        categoryTags: Array.isArray(range.categoryTags) ? range.categoryTags.slice() : [],
+        description: range.description || "",
+      }));
+    }
+
+    function clampOffset(value, min, max) {
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        return min;
+      }
+      if (value < min) {
+        return min;
+      }
+      if (value > max) {
+        return max;
+      }
+      return value;
+    }
+
+    function createHighlightedContent(text, ranges) {
+      if (!doc) {
+        return null;
+      }
+
+      if (!Array.isArray(ranges) || ranges.length === 0) {
+        return doc.createTextNode(typeof text === "string" ? text : "");
+      }
+
+      const codepoints = Array.from(typeof text === "string" ? text : "");
+      const textLength = codepoints.length;
+      const fragment = doc.createDocumentFragment();
+      let cursor = 0;
+
+      const sortedRanges = ranges
+        .map((range) => ({ ...range }))
+        .sort((a, b) => {
+          if (a.startOffset !== b.startOffset) {
+            return a.startOffset - b.startOffset;
+          }
+          if (a.endOffset !== b.endOffset) {
+            return a.endOffset - b.endOffset;
+          }
+          return a.clauseId.localeCompare(b.clauseId);
+        });
+
+      for (const range of sortedRanges) {
+        const start = clampOffset(range.startOffset, 0, textLength);
+        const end = clampOffset(range.endOffset, start, textLength);
+
+        if (start > cursor) {
+          fragment.appendChild(doc.createTextNode(codepoints.slice(cursor, start).join("")));
+        }
+
+        const span = doc.createElement("span");
+        span.className = "clause-highlight";
+        if (range.clauseId) {
+          span.dataset.clauseId = range.clauseId;
+        }
+        if (Array.isArray(range.categoryTags) && range.categoryTags.length > 0) {
+          span.dataset.clauseTags = range.categoryTags.join(",");
+        }
+        if (range.description) {
+          span.title = range.description;
+        }
+        span.textContent = codepoints.slice(start, end).join("");
+        fragment.appendChild(span);
+        cursor = end;
+      }
+
+      if (cursor < textLength) {
+        fragment.appendChild(doc.createTextNode(codepoints.slice(cursor).join("")));
+      }
+
+      return fragment;
+    }
 
     function renderVerses(verses) {
       viewerState.navigationIndex = buildNavigationIndex(verses);
@@ -555,7 +800,20 @@
 
         const textEl = doc.createElement("span");
         textEl.className = "verse-text";
-        textEl.textContent = verse.text;
+
+        const ranges = getClauseRangesForReference(verse.reference);
+        if (ranges.length > 0) {
+          verseEl.dataset.hasClauses = "true";
+          const highlighted = createHighlightedContent(verse.text, ranges);
+          if (highlighted) {
+            textEl.textContent = "";
+            textEl.appendChild(highlighted);
+          } else {
+            textEl.textContent = verse.text;
+          }
+        } else {
+          textEl.textContent = verse.text;
+        }
 
         verseEl.append(referenceEl, textEl);
         fragment.appendChild(verseEl);
@@ -749,6 +1007,29 @@
       return goToNavigationEntry(targetEntry);
     }
 
+    async function fetchClausePayload(clauseUrl) {
+      if (typeof clauseUrl !== "string" || !clauseUrl.trim()) {
+        return null;
+      }
+
+      if (!fetchFn) {
+        return null;
+      }
+
+      try {
+        const response = await fetchFn(clauseUrl.trim(), { cache: "no-cache" });
+        if (!response || !response.ok) {
+          const status = response ? response.status : "unknown";
+          throw new Error(`Clause request failed with status ${status}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        safeConsole.error(error);
+        return null;
+      }
+    }
+
     async function loadBook(loadOptions = {}) {
       if (!displayEl || !headerEl) {
         return null;
@@ -760,6 +1041,16 @@
         typeof overrideUrl === "string" && overrideUrl.trim()
           ? overrideUrl
           : viewerState.dataUrl;
+
+      const overrideClauseUrl =
+        loadOptions && typeof loadOptions === "object" ? loadOptions.clauseDataUrl : undefined;
+      const targetClauseUrl =
+        typeof overrideClauseUrl === "string" && overrideClauseUrl.trim()
+          ? overrideClauseUrl.trim()
+          : viewerState.clauseDataUrl;
+
+      viewerState.clauseDataUrl = targetClauseUrl || "";
+      clearClauseState();
 
       updateContainerState("loading");
       if (containerEl) {
@@ -813,6 +1104,14 @@
         }
 
         const hasVerses = Array.isArray(payload.verses) && payload.verses.length > 0;
+
+        if (viewerState.clauseDataUrl) {
+          const clausePayload = await fetchClausePayload(viewerState.clauseDataUrl);
+          if (clausePayload) {
+            updateClauseState(clausePayload);
+          }
+        }
+
         renderVerses(payload.verses);
         if (hasVerses) {
           setStatus("");
@@ -835,10 +1134,12 @@
       viewerState.selectedBookId = book.bookId;
       viewerState.dataUrl = book.dataUrl;
       viewerState.sourcePath = book.sourcePath || "";
+      viewerState.clauseDataUrl = book.clauseDataUrl || "";
       viewerState.activeBookId = book.bookId;
       viewerState.activeBookDisplayName = book.displayName;
       viewerState.activeReference = "";
       viewerState.navigationIndex = createEmptyNavigationIndex();
+      clearClauseState();
       resetReferenceInputs();
       setReferenceControlsEnabled(false);
 
@@ -866,7 +1167,7 @@
         return null;
       }
 
-      return loadBook({ dataUrl: book.dataUrl });
+      return loadBook({ dataUrl: book.dataUrl, clauseDataUrl: book.clauseDataUrl });
     }
 
     async function loadManifest(manifestOptions = {}) {
