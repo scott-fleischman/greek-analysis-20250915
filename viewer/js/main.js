@@ -61,6 +61,7 @@
       bookMap: new Map(),
       selectedBookId: null,
       manifestLoaded: false,
+      sourcePath: "",
     };
 
     const statusEl = doc ? doc.getElementById("viewer-status") : null;
@@ -68,6 +69,7 @@
     const displayEl = doc ? doc.getElementById("book-display") : null;
     const headerEl = doc ? doc.getElementById("book-header") : null;
     const selectorEl = doc ? doc.getElementById("book-selector") : null;
+    const sourcePathEl = doc ? doc.getElementById("book-source-path") : null;
     const safeConsole = resolveConsole(consoleObj);
 
     if (selectorEl) {
@@ -111,11 +113,20 @@
       const header =
         typeof entry.header === "string" && entry.header.trim() ? entry.header : "";
 
+      const rawSourcePath =
+        typeof entry.source_path === "string"
+          ? entry.source_path
+          : typeof entry.sourcePath === "string"
+            ? entry.sourcePath
+            : "";
+      const sourcePath = rawSourcePath.trim();
+
       return {
         bookId,
         dataUrl,
         displayName,
         header,
+        sourcePath,
       };
     }
 
@@ -226,11 +237,25 @@
         const payload = await response.json();
         const displayName = payload.display_name || "Gospel of Mark";
         const header = payload.header || "";
+        const payloadSourcePath =
+          typeof payload.source_path === "string" && payload.source_path.trim()
+            ? payload.source_path.trim()
+            : typeof payload.sourcePath === "string" && payload.sourcePath.trim()
+              ? payload.sourcePath.trim()
+              : "";
 
         displayEl.textContent = displayName;
         headerEl.textContent = header;
         if (doc) {
           doc.title = `${displayName} · SBLGNT Viewer`;
+        }
+
+        if (payloadSourcePath) {
+          viewerState.sourcePath = payloadSourcePath;
+        }
+
+        if (sourcePathEl) {
+          sourcePathEl.textContent = viewerState.sourcePath || "";
         }
 
         renderVerses(payload.verses);
@@ -251,6 +276,7 @@
 
       viewerState.selectedBookId = book.bookId;
       viewerState.dataUrl = book.dataUrl;
+      viewerState.sourcePath = book.sourcePath || "";
 
       if (selectorEl && selectorEl.value !== book.bookId) {
         selectorEl.value = book.bookId;
@@ -266,6 +292,10 @@
 
       if (doc) {
         doc.title = `${book.displayName} · SBLGNT Viewer`;
+      }
+
+      if (sourcePathEl) {
+        sourcePathEl.textContent = viewerState.sourcePath || "";
       }
 
       if (options && options.skipLoad) {
