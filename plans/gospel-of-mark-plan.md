@@ -12,10 +12,10 @@
 - [x] Wire the loader to fetch the selected book, with loading/empty states for clarity.
 - [x] Index chapter and verse boundaries so navigation controls know their targets.
 - [x] Implement direct chapter/verse jump inputs backed by the index.
-- [ ] Add next/previous navigation shortcuts and verify they sync with the main text view.
+- [x] Add next/previous navigation shortcuts and verify they sync with the main text view.
 
 ## 3. Clause-Level Overlay
-- [ ] Draft a clause schema document (IDs, boundaries, category tags) that future agents can reference.
+- [x] Draft a clause schema document (IDs, boundaries, category tags) that future agents can reference.
 - [ ] Produce and validate a small clause sample (e.g., Mark 1) that conforms to the schema.
 - [ ] Render static clause highlights in the viewer using the sample data to confirm styling.
 - [ ] Add toggleable overlays and metadata displays (tooltips or panel) for clause interactions.
