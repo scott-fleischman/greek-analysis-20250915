@@ -19,6 +19,7 @@
       chapters: [],
       chapterLookup: {},
       referenceLookup: {},
+      orderedReferences: [],
     };
   }
 
@@ -68,10 +69,24 @@
       }
     }
 
+    const clonedOrderedReferences = Array.isArray(index.orderedReferences)
+      ? index.orderedReferences.map((entry) =>
+          entry && typeof entry === "object"
+            ? {
+                index: entry.index,
+                reference: entry.reference,
+                chapter: entry.chapter,
+                verse: entry.verse,
+              }
+            : entry,
+        )
+      : [];
+
     return {
       chapters: clonedChapters,
       chapterLookup: clonedChapterLookup,
       referenceLookup: clonedReferenceLookup,
+      orderedReferences: clonedOrderedReferences,
     };
   }
 
@@ -144,6 +159,13 @@
         chapter: chapterNumber,
         verse: verseNumber,
       };
+
+      navigationIndex.orderedReferences.push({
+        index,
+        reference,
+        chapter: chapterNumber,
+        verse: verseNumber,
+      });
     }
 
     return navigationIndex;
@@ -236,6 +258,8 @@
     const referenceVerseInput = doc ? doc.getElementById("reference-jump-verse") : null;
     const referenceJumpSubmit = doc ? doc.getElementById("reference-jump-submit") : null;
     const referenceJumpHintEl = doc ? doc.getElementById("reference-jump-hint") : null;
+    const referencePreviousButton = doc ? doc.getElementById("reference-jump-previous") : null;
+    const referenceNextButton = doc ? doc.getElementById("reference-jump-next") : null;
     const safeConsole = resolveConsole(consoleObj);
 
     function updateReferenceHint(isEnabled) {
@@ -285,6 +309,15 @@
       setElementDisabledState(referenceChapterInput, shouldDisable);
       setElementDisabledState(referenceVerseInput, shouldDisable);
       setElementDisabledState(referenceJumpSubmit, shouldDisable);
+      setElementDisabledState(referencePreviousButton, shouldDisable);
+      setElementDisabledState(referenceNextButton, shouldDisable);
+
+      if (referencePreviousButton) {
+        referencePreviousButton.setAttribute("aria-disabled", shouldDisable ? "true" : "false");
+      }
+      if (referenceNextButton) {
+        referenceNextButton.setAttribute("aria-disabled", shouldDisable ? "true" : "false");
+      }
 
       updateReferenceHint(resolved);
     }
@@ -536,6 +569,56 @@
       return cloneNavigationIndex(viewerState.navigationIndex);
     }
 
+    function getOrderedNavigationEntries() {
+      if (
+        !viewerState.navigationIndex ||
+        !Array.isArray(viewerState.navigationIndex.orderedReferences) ||
+        viewerState.navigationIndex.orderedReferences.length === 0
+      ) {
+        return [];
+      }
+
+      return viewerState.navigationIndex.orderedReferences.slice();
+    }
+
+    function goToNavigationEntry(entry) {
+      if (!entry || typeof entry !== "object") {
+        return false;
+      }
+
+      const reference = typeof entry.reference === "string" ? entry.reference.trim() : "";
+      if (!reference) {
+        return false;
+      }
+
+      const highlighted = highlightVerse(reference);
+      if (!highlighted) {
+        return false;
+      }
+
+      if (
+        referenceChapterInput &&
+        typeof entry.chapter === "number" &&
+        Number.isInteger(entry.chapter) &&
+        entry.chapter > 0
+      ) {
+        referenceChapterInput.value = String(entry.chapter);
+      }
+
+      if (
+        referenceVerseInput &&
+        typeof entry.verse === "number" &&
+        Number.isInteger(entry.verse) &&
+        entry.verse > 0
+      ) {
+        referenceVerseInput.value = String(entry.verse);
+      }
+
+      viewerState.activeReference = reference;
+      setStatus("");
+      return true;
+    }
+
     function jumpToReference(target = {}) {
       const input = target && typeof target === "object" ? target : {};
 
@@ -606,20 +689,64 @@
         return false;
       }
 
-      const highlighted = highlightVerse(targetVerseEntry.reference);
-      if (!highlighted) {
+      return goToNavigationEntry({
+        reference: targetVerseEntry.reference,
+        chapter: chapterEntry.chapter,
+        verse: targetVerseEntry.verse,
+        index: targetVerseEntry.index,
+      });
+    }
+
+    function jumpToNextReference() {
+      const orderedEntries = getOrderedNavigationEntries();
+      if (orderedEntries.length === 0) {
+        setStatus("No text is currently available for navigation.", true);
         return false;
       }
 
-      if (referenceChapterInput) {
-        referenceChapterInput.value = String(chapterEntry.chapter);
-      }
-      if (referenceVerseInput) {
-        referenceVerseInput.value = String(targetVerseEntry.verse);
+      const lookup =
+        viewerState.activeReference && viewerState.navigationIndex.referenceLookup
+          ? viewerState.navigationIndex.referenceLookup[viewerState.activeReference] || null
+          : null;
+
+      let targetEntry = null;
+      if (!lookup || typeof lookup.index !== "number") {
+        targetEntry = orderedEntries[0] || null;
+      } else {
+        targetEntry = orderedEntries[lookup.index + 1] || null;
+        if (!targetEntry) {
+          setStatus("You have reached the final verse of this text.", true);
+          return false;
+        }
       }
 
-      setStatus("");
-      return true;
+      return goToNavigationEntry(targetEntry);
+    }
+
+    function jumpToPreviousReference() {
+      const orderedEntries = getOrderedNavigationEntries();
+      if (orderedEntries.length === 0) {
+        setStatus("No text is currently available for navigation.", true);
+        return false;
+      }
+
+      const lookup =
+        viewerState.activeReference && viewerState.navigationIndex.referenceLookup
+          ? viewerState.navigationIndex.referenceLookup[viewerState.activeReference] || null
+          : null;
+
+      let targetEntry = null;
+      if (!lookup || typeof lookup.index !== "number") {
+        targetEntry = orderedEntries[orderedEntries.length - 1] || null;
+      } else {
+        if (lookup.index - 1 < 0) {
+          setStatus("You are at the beginning of this text.", true);
+          return false;
+        }
+        targetEntry = orderedEntries[lookup.index - 1] || null;
+      }
+
+      return goToNavigationEntry(targetEntry);
     }
 
     async function loadBook(loadOptions = {}) {
@@ -838,6 +965,40 @@
         });
       }
 
+      if (referencePreviousButton) {
+        referencePreviousButton.addEventListener("click", (event) => {
+          if (event && typeof event.preventDefault === "function") {
+            event.preventDefault();
+          }
+
+          if (!viewerState.referenceControlsEnabled) {
+            return;
+          }
+
+          const success = jumpToPreviousReference();
+          if (!success && typeof referencePreviousButton.focus === "function") {
+            referencePreviousButton.focus();
+          }
+        });
+      }
+
+      if (referenceNextButton) {
+        referenceNextButton.addEventListener("click", (event) => {
+          if (event && typeof event.preventDefault === "function") {
+            event.preventDefault();
+          }
+
+          if (!viewerState.referenceControlsEnabled) {
+            return;
+          }
+
+          const success = jumpToNextReference();
+          if (!success && typeof referenceNextButton.focus === "function") {
+            referenceNextButton.focus();
+          }
+        });
+      }
+
       const startViewer = async () => {
         updateContainerState("loading");
         setStatus(viewerState.messages.loading);
@@ -903,6 +1064,8 @@
       selectBook,
       renderVerses,
       jumpToReference,
+      jumpToNextReference,
+      jumpToPreviousReference,
       getNavigationIndex,
       setStatus,
       configure,

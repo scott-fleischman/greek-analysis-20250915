@@ -231,6 +231,8 @@ function buildDocument({ includeSelector = true, includeReferenceJump = true } =
   let referenceVerseInput = null;
   let referenceJumpSubmit = null;
   let referenceJumpHint = null;
+  let referencePreviousButton = null;
+  let referenceNextButton = null;
   if (includeSelector) {
     selectorEl = doc.register("book-selector", new MockElement("select"));
     selectorEl.disabled = true;
@@ -241,6 +243,8 @@ function buildDocument({ includeSelector = true, includeReferenceJump = true } =
     referenceVerseInput = doc.register("reference-jump-verse", new MockElement("input"));
     referenceJumpSubmit = doc.register("reference-jump-submit", new MockElement("button"));
     referenceJumpHint = doc.register("reference-jump-hint", new MockElement("p"));
+    referencePreviousButton = doc.register("reference-jump-previous", new MockElement("button"));
+    referenceNextButton = doc.register("reference-jump-next", new MockElement("button"));
 
     referenceJumpForm.appendChild(referenceChapterInput);
     referenceJumpForm.appendChild(referenceVerseInput);
@@ -248,6 +252,8 @@ function buildDocument({ includeSelector = true, includeReferenceJump = true } =
     referenceChapterInput.disabled = true;
     referenceVerseInput.disabled = true;
     referenceJumpSubmit.disabled = true;
+    referencePreviousButton.disabled = true;
+    referenceNextButton.disabled = true;
   }
   return {
     doc,
@@ -262,6 +268,8 @@ function buildDocument({ includeSelector = true, includeReferenceJump = true } =
     referenceVerseInput,
     referenceJumpSubmit,
     referenceJumpHint,
+    referencePreviousButton,
+    referenceNextButton,
   };
 }
 
@@ -391,6 +399,21 @@ test("renderVerses builds a navigation index for chapters and verses", () => {
     verse: 2,
   });
 
+  assert.deepEqual(
+    indexSnapshot.orderedReferences.map((entry) => ({
+      index: entry.index,
+      reference: entry.reference,
+      chapter: entry.chapter,
+      verse: entry.verse,
+    })),
+    [
+      { index: 0, reference: "Mark 1:1", chapter: 1, verse: 1 },
+      { index: 1, reference: "Mark 1:2", chapter: 1, verse: 2 },
+      { index: 2, reference: "Mark 2:1", chapter: 2, verse: 1 },
+      { index: 3, reference: "Mark 2:2", chapter: 2, verse: 2 },
+    ],
+  );
+
   // Mutating the snapshot should not alter the internal state.
   indexSnapshot.chapters[0].startIndex = 99;
   const followUpSnapshot = viewer.getNavigationIndex();
@@ -410,6 +433,7 @@ test("renderVerses resets the navigation index when data is empty", () => {
   assert.equal(emptyIndex.chapters.length, 0);
   assert.deepEqual(emptyIndex.chapterLookup, {});
   assert.deepEqual(emptyIndex.referenceLookup, {});
+  assert.deepEqual(emptyIndex.orderedReferences, []);
 });
 
 test("renderVerses toggles the reference jump controls", () => {
@@ -420,6 +444,8 @@ test("renderVerses toggles the reference jump controls", () => {
     referenceVerseInput,
     referenceJumpSubmit,
     referenceJumpHint,
+    referencePreviousButton,
+    referenceNextButton,
   } = buildDocument();
   const viewer = createViewer({ document: doc });
 
@@ -431,6 +457,12 @@ test("renderVerses toggles the reference jump controls", () => {
   assert.equal(referenceVerseInput.getAttribute("disabled"), "");
   assert.equal(referenceJumpSubmit.disabled, true);
   assert.equal(referenceJumpSubmit.getAttribute("disabled"), "");
+  assert.equal(referencePreviousButton.disabled, true);
+  assert.equal(referencePreviousButton.getAttribute("disabled"), "");
+  assert.equal(referencePreviousButton.getAttribute("aria-disabled"), "true");
+  assert.equal(referenceNextButton.disabled, true);
+  assert.equal(referenceNextButton.getAttribute("disabled"), "");
+  assert.equal(referenceNextButton.getAttribute("aria-disabled"), "true");
   assert.equal(referenceJumpHint.textContent, "Jump controls will be enabled after the text loads.");
 
   viewer.renderVerses([
@@ -446,6 +478,12 @@ test("renderVerses toggles the reference jump controls", () => {
   assert.equal(referenceVerseInput.getAttribute("disabled"), null);
   assert.equal(referenceJumpSubmit.disabled, false);
   assert.equal(referenceJumpSubmit.getAttribute("disabled"), null);
+  assert.equal(referencePreviousButton.disabled, false);
+  assert.equal(referencePreviousButton.getAttribute("disabled"), null);
+  assert.equal(referencePreviousButton.getAttribute("aria-disabled"), "false");
+  assert.equal(referenceNextButton.disabled, false);
+  assert.equal(referenceNextButton.getAttribute("disabled"), null);
+  assert.equal(referenceNextButton.getAttribute("aria-disabled"), "false");
   assert.equal(referenceChapterInput.value, "");
   assert.equal(referenceVerseInput.value, "");
   assert.equal(
@@ -463,6 +501,12 @@ test("renderVerses toggles the reference jump controls", () => {
   assert.equal(referenceVerseInput.getAttribute("disabled"), "");
   assert.equal(referenceJumpSubmit.disabled, true);
   assert.equal(referenceJumpSubmit.getAttribute("disabled"), "");
+  assert.equal(referencePreviousButton.disabled, true);
+  assert.equal(referencePreviousButton.getAttribute("disabled"), "");
+  assert.equal(referencePreviousButton.getAttribute("aria-disabled"), "true");
+  assert.equal(referenceNextButton.disabled, true);
+  assert.equal(referenceNextButton.getAttribute("disabled"), "");
+  assert.equal(referenceNextButton.getAttribute("aria-disabled"), "true");
   assert.equal(referenceJumpHint.textContent, "Jump controls will be enabled after the text loads.");
 });
 
@@ -514,6 +558,188 @@ test("jumpToReference reports errors when a reference is unavailable", () => {
 
   const [onlyVerse] = containerEl.children;
   assert.ok(!Object.prototype.hasOwnProperty.call(onlyVerse.dataset, "active"));
+});
+
+test("jumpToNextReference navigates sequential verses", () => {
+  const {
+    doc,
+    containerEl,
+    referenceChapterInput,
+    referenceVerseInput,
+    statusEl,
+  } = buildDocument();
+  const viewer = createViewer({ document: doc });
+
+  viewer.renderVerses([
+    { reference: "Mark 1:1", text: "Verse one" },
+    { reference: "Mark 1:2", text: "Verse two" },
+    { reference: "Mark 2:1", text: "Verse three" },
+  ]);
+
+  const firstAdvance = viewer.jumpToNextReference();
+  assert.equal(firstAdvance, true);
+  let [verseOne, verseTwo, verseThree] = containerEl.children;
+  assert.equal(verseOne.dataset.active, "true");
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseTwo.dataset, "active"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseThree.dataset, "active"));
+  assert.equal(referenceChapterInput.value, "1");
+  assert.equal(referenceVerseInput.value, "1");
+  assert.equal(statusEl.textContent, "");
+
+  const secondAdvance = viewer.jumpToNextReference();
+  assert.equal(secondAdvance, true);
+  [verseOne, verseTwo, verseThree] = containerEl.children;
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseOne.dataset, "active"));
+  assert.equal(verseTwo.dataset.active, "true");
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseThree.dataset, "active"));
+  assert.equal(referenceChapterInput.value, "1");
+  assert.equal(referenceVerseInput.value, "2");
+
+  const thirdAdvance = viewer.jumpToNextReference();
+  assert.equal(thirdAdvance, true);
+  [verseOne, verseTwo, verseThree] = containerEl.children;
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseOne.dataset, "active"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseTwo.dataset, "active"));
+  assert.equal(verseThree.dataset.active, "true");
+  assert.equal(referenceChapterInput.value, "2");
+  assert.equal(referenceVerseInput.value, "1");
+
+  const beyondFinal = viewer.jumpToNextReference();
+  assert.equal(beyondFinal, false);
+  assert.equal(statusEl.textContent, "You have reached the final verse of this text.");
+  [verseOne, verseTwo, verseThree] = containerEl.children;
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseOne.dataset, "active"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseTwo.dataset, "active"));
+  assert.equal(verseThree.dataset.active, "true");
+});
+
+test("jumpToPreviousReference moves backward and reports boundaries", () => {
+  const {
+    doc,
+    containerEl,
+    referenceChapterInput,
+    referenceVerseInput,
+    statusEl,
+  } = buildDocument();
+  const viewer = createViewer({ document: doc });
+
+  viewer.renderVerses([
+    { reference: "Mark 1:1", text: "Verse one" },
+    { reference: "Mark 1:2", text: "Verse two" },
+    { reference: "Mark 1:3", text: "Verse three" },
+  ]);
+
+  const initialJump = viewer.jumpToPreviousReference();
+  assert.equal(initialJump, true);
+  let [verseOne, verseTwo, verseThree] = containerEl.children;
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseOne.dataset, "active"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseTwo.dataset, "active"));
+  assert.equal(verseThree.dataset.active, "true");
+  assert.equal(referenceChapterInput.value, "1");
+  assert.equal(referenceVerseInput.value, "3");
+
+  const backwardStep = viewer.jumpToPreviousReference();
+  assert.equal(backwardStep, true);
+  [verseOne, verseTwo, verseThree] = containerEl.children;
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseOne.dataset, "active"));
+  assert.equal(verseTwo.dataset.active, "true");
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseThree.dataset, "active"));
+  assert.equal(referenceChapterInput.value, "1");
+  assert.equal(referenceVerseInput.value, "2");
+
+  const finalStep = viewer.jumpToPreviousReference();
+  assert.equal(finalStep, true);
+  [verseOne, verseTwo, verseThree] = containerEl.children;
+  assert.equal(verseOne.dataset.active, "true");
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseTwo.dataset, "active"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseThree.dataset, "active"));
+  assert.equal(referenceChapterInput.value, "1");
+  assert.equal(referenceVerseInput.value, "1");
+  assert.equal(statusEl.textContent, "");
+
+  const beforeFirst = viewer.jumpToPreviousReference();
+  assert.equal(beforeFirst, false);
+  assert.equal(statusEl.textContent, "You are at the beginning of this text.");
+  [verseOne, verseTwo, verseThree] = containerEl.children;
+  assert.equal(verseOne.dataset.active, "true");
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseTwo.dataset, "active"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseThree.dataset, "active"));
+});
+
+test("navigation shortcut buttons trigger adjacent jumps", () => {
+  const {
+    doc,
+    containerEl,
+    referenceNextButton,
+    referencePreviousButton,
+    referenceChapterInput,
+    referenceVerseInput,
+  } = buildDocument();
+  const viewer = createViewer({ document: doc });
+
+  doc.readyState = "loading";
+  viewer.init();
+
+  referenceNextButton.dispatchEvent({ type: "click" });
+  assert.equal(containerEl.children.length, 0);
+  assert.equal(referenceChapterInput.value, "");
+  assert.equal(referenceVerseInput.value, "");
+
+  viewer.renderVerses([
+    { reference: "Mark 1:1", text: "Verse one" },
+    { reference: "Mark 1:2", text: "Verse two" },
+  ]);
+
+  referenceNextButton.dispatchEvent({ type: "click" });
+  let [verseOne, verseTwo] = containerEl.children;
+  assert.equal(verseOne.dataset.active, "true");
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseTwo.dataset, "active"));
+  assert.equal(referenceChapterInput.value, "1");
+  assert.equal(referenceVerseInput.value, "1");
+
+  referenceNextButton.dispatchEvent({ type: "click" });
+  [verseOne, verseTwo] = containerEl.children;
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseOne.dataset, "active"));
+  assert.equal(verseTwo.dataset.active, "true");
+  assert.equal(referenceChapterInput.value, "1");
+  assert.equal(referenceVerseInput.value, "2");
+
+  referencePreviousButton.dispatchEvent({ type: "click" });
+  [verseOne, verseTwo] = containerEl.children;
+  assert.equal(verseOne.dataset.active, "true");
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseTwo.dataset, "active"));
+  assert.equal(referenceChapterInput.value, "1");
+  assert.equal(referenceVerseInput.value, "1");
+
+  referenceNextButton.dispatchEvent({ type: "click" });
+  [verseOne, verseTwo] = containerEl.children;
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseOne.dataset, "active"));
+  assert.equal(verseTwo.dataset.active, "true");
+
+  let nextFocusCalled = false;
+  referenceNextButton.focus = () => {
+    nextFocusCalled = true;
+  };
+  referenceNextButton.dispatchEvent({ type: "click" });
+  assert.equal(nextFocusCalled, true);
+  [verseOne, verseTwo] = containerEl.children;
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseOne.dataset, "active"));
+  assert.equal(verseTwo.dataset.active, "true");
+
+  referencePreviousButton.dispatchEvent({ type: "click" });
+  [verseOne, verseTwo] = containerEl.children;
+  assert.equal(verseOne.dataset.active, "true");
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseTwo.dataset, "active"));
+
+  let previousFocusCalled = false;
+  referencePreviousButton.focus = () => {
+    previousFocusCalled = true;
+  };
+  referencePreviousButton.dispatchEvent({ type: "click" });
+  assert.equal(previousFocusCalled, true);
+  [verseOne, verseTwo] = containerEl.children;
+  assert.equal(verseOne.dataset.active, "true");
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseTwo.dataset, "active"));
 });
 
 test("reference jump form submits values through the navigation index", async () => {
