@@ -7,7 +7,7 @@
 
 ## 2. Core HTML Viewer
 - [x] Draft a minimal HTML/CSS scaffold that renders beautifully formatted Greek text for a selected book (start with Mark).
-- [ ] Generate a manifest of available viewer JSON payloads as part of the build step.
+- [x] Generate a manifest of available viewer JSON payloads as part of the build step.
 - [ ] Add a UI control that surfaces the manifest and lets readers choose a book.
 - [ ] Wire the loader to fetch the selected book, with loading/empty states for clarity.
 - [ ] Index chapter and verse boundaries so navigation controls know their targets.

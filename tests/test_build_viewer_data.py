@@ -126,3 +126,79 @@ def test_main_supports_overrides(tmp_path: Path, sample_lines: list[str]) -> Non
     assert payload["book_id"] == "GospelMark"
     assert payload["display_name"] == "Κατὰ Μᾶρκον"
     assert payload["source_path"].endswith("Mark.txt")
+
+
+def test_main_generates_manifest(tmp_path: Path, sample_lines: list[str]) -> None:
+    input_file = tmp_path / "Mark.txt"
+    input_file.write_text("\n".join(sample_lines), encoding="utf-8")
+    output_file = tmp_path / "viewer" / "data" / "mark.json"
+
+    _run_cli([str(input_file), str(output_file)])
+
+    manifest_file = output_file.parent / "manifest.json"
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+
+    assert manifest["version"] == 1
+    assert manifest["generated_at"].endswith("+00:00")
+    assert len(manifest["books"]) == 1
+
+    entry = manifest["books"][0]
+    assert entry["book_id"] == "mark"
+    assert entry["display_name"] == "Mark"
+    assert entry["data_path"] == "mark.json"
+    assert entry["data_url"] == "data/mark.json"
+
+
+def test_manifest_updates_existing_entry(tmp_path: Path, sample_lines: list[str]) -> None:
+    manifest_dir = tmp_path / "viewer" / "data"
+    manifest_dir.mkdir(parents=True)
+    manifest_file = manifest_dir / "manifest.json"
+    manifest_file.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "generated_at": "2023-01-01T00:00:00+00:00",
+                "books": [
+                    {
+                        "book_id": "mark",
+                        "display_name": "Legacy Mark",
+                        "data_path": "mark.json",
+                        "data_url": "data/mark.json",
+                    },
+                    {
+                        "book_id": "acts",
+                        "display_name": "Acts",
+                        "data_path": "acts.json",
+                        "data_url": "data/acts.json",
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    input_file = tmp_path / "MarkGreek.txt"
+    input_file.write_text("\n".join(sample_lines), encoding="utf-8")
+    output_file = manifest_dir / "mark.json"
+
+    _run_cli(
+        [
+            str(input_file),
+            str(output_file),
+            "--display-name",
+            "Κατὰ Μᾶρκον",
+            "--book-id",
+            "mark",
+        ]
+    )
+
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+
+    assert len(manifest["books"]) == 2
+    assert manifest["generated_at"] != "2023-01-01T00:00:00+00:00"
+
+    mark_entry = next(book for book in manifest["books"] if book.get("book_id") == "mark")
+    acts_entry = next(book for book in manifest["books"] if book.get("book_id") == "acts")
+
+    assert mark_entry["display_name"] == "Κατὰ Μᾶρκον"
+    assert acts_entry["data_path"] == "acts.json"
