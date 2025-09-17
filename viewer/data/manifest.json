@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "book_id": "mark",
+      "display_name": "Gospel of Mark",
+      "data_path": "mark.json",
+      "data_url": "data/mark.json",
+      "header": "ΚΑΤΑ ΜΑΡΚΟΝ",
+      "source_path": "external-data/SBLGNT/data/sblgnt/text/Mark.txt"
+    }
+  ],
+  "version": 1,
+  "generated_at": "2025-09-17T05:32:31.558010+00:00"
+}
