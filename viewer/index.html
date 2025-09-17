@@ -12,6 +12,17 @@
         <p class="app-overline">Greek Text Viewer</p>
         <h1 id="book-display" class="app-title">Loading…</h1>
         <p id="book-header" class="app-subtitle" aria-live="polite"></p>
+        <div class="book-picker" id="book-selector-container">
+          <label class="book-picker-label" for="book-selector">Choose a text</label>
+          <select
+            id="book-selector"
+            class="book-picker-select"
+            aria-label="Available SBLGNT texts"
+            disabled
+          >
+            <option>Loading available texts…</option>
+          </select>
+        </div>
       </div>
     </header>
     <main class="app-shell" aria-live="polite">
