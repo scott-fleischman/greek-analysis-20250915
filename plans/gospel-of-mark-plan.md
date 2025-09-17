@@ -6,26 +6,43 @@
 - [x] Identify any gaps that require LLM-assisted extraction or cleaning and log them for follow-up tasks.
 
 ## 2. Core HTML Viewer
-- [ ] Draft a minimal HTML/CSS scaffold that renders beautifully formatted Greek text for a selected book (start with Mark).
-- [ ] Build a small, modular JavaScript loader that lists all available texts (Gospels and Pauline letters) and swaps the displayed text on selection.
-- [ ] Add basic navigation (chapter/verse jump, next/previous buttons) to verify interaction requirements.
+- [x] Draft a minimal HTML/CSS scaffold that renders beautifully formatted Greek text for a selected book (start with Mark).
+- [ ] Generate a manifest of available viewer JSON payloads as part of the build step.
+- [ ] Add a UI control that surfaces the manifest and lets readers choose a book.
+- [ ] Wire the loader to fetch the selected book, with loading/empty states for clarity.
+- [ ] Index chapter and verse boundaries so navigation controls know their targets.
+- [ ] Implement direct chapter/verse jump inputs backed by the index.
+- [ ] Add next/previous navigation shortcuts and verify they sync with the main text view.
 
 ## 3. Clause-Level Overlay
-- [ ] Decide on the clause-level data format supplied by the LLM (IDs, boundaries, category tags) and document it for future agents.
-- [ ] Implement highlighting in the viewer that toggles clause-level analyses on/off and visually links text spans to their analysis metadata.
+- [ ] Draft a clause schema document (IDs, boundaries, category tags) that future agents can reference.
+- [ ] Produce and validate a small clause sample (e.g., Mark 1) that conforms to the schema.
+- [ ] Render static clause highlights in the viewer using the sample data to confirm styling.
+- [ ] Add toggleable overlays and metadata displays (tooltips or panel) for clause interactions.
 - [ ] Capture UX notes on how clause selections surface the applied analyses (tooltips, side panel, etc.).
 
 ## 4. Analysis Browser by Category
-- [ ] Define the list of analysis categories and what context (10-20 words or full clause) should be displayed for each hit.
-- [ ] Create a viewer panel that lists categories with counts per text and allows drilling down into specific instances.
-- [ ] Ensure each instance view links back to the main text with synchronized highlighting to keep context clear.
+- [ ] Document the analysis categories and context rules, aligned with the clause schema.
+- [ ] Shape backend data (counts plus context snippets) required to populate the browser.
+- [ ] Build the category listing panel with counts per text and drill-down affordances.
+- [ ] Link instance views back to the main text with synchronized highlighting to keep context clear.
 
 ## 5. Quality Gates and Automation
-- [ ] Configure linting plus JSDoc-based type checking (or equivalent stock JS checks) for the viewer code.
-- [ ] Establish an automated test suite for the JavaScript with at least 80% coverage and fail the build when coverage drops below that threshold.
+- [ ] Select linting, typing, and test tooling for the viewer (documenting the rationale).
+- [ ] Bootstrap the configurations and add smoke tests so linting and unit tests run in CI.
+- [ ] Ratchet code coverage expectations up to 80% once the suite is stable, enforcing the threshold in CI.
 - [ ] Outline CI steps (lint, type check, test, coverage report) so future agents can wire them into the pipeline.
 
 ## 6. Data Generation via LLM Agents
-- [ ] Specify prompts/workflows for LLM agents to produce clause analyses, category labels, and context snippets consistent with the viewer requirements.
-- [ ] Document validation expectations for LLM outputs (spot-checking, schema checks) before they are ingested into the viewer.
-- [ ] Plan incremental delivery: start with Mark, then extend to the remaining Gospels and Pauline letters once the workflow proves solid.
+- **Clause Analysis Track**
+  - [ ] Specify prompts/workflows for clause analyses that align with the agreed schema.
+  - [ ] Document validation expectations (spot checks, schema enforcement) before ingesting clause data.
+  - [ ] Plan incremental delivery for clauses: start with Mark, then extend to additional books once validated.
+- **Morphology Track**
+  - [ ] Specify prompts/workflows for lemma and morphology enrichment compatible with viewer needs.
+  - [ ] Document validation and reconciliation steps against existing lexicon resources.
+  - [ ] Stage rollout beginning with Mark, expanding as validation procedures mature.
+- **Apparatus Track**
+  - [ ] Define prompts/workflows for textual apparatus notes, including required metadata fields.
+  - [ ] Establish validation expectations for apparatus outputs prior to viewer integration.
+  - [ ] Sequence delivery from a pilot chapter toward full-book coverage as confidence grows.
