@@ -1,0 +1,1795 @@
+{
+  "book_id": "mark",
+  "display_name": "Gospel of Mark",
+  "source_path": "external-data/SBLGNT/data/sblgnt/text/Mark.txt",
+  "generated": {
+    "timestamp": "2025-09-19T00:00:00Z",
+    "agent": "manual.curation.v1",
+    "confidence": "medium",
+    "notes": "Sample clauses for Mark 1 curated to exercise viewer overlay pipeline."
+  },
+  "verses": [
+    {
+      "reference": "Mark 1:1",
+      "index": 0,
+      "chapter": 1,
+      "verse": 1,
+      "character_count": 35
+    },
+    {
+      "reference": "Mark 1:2",
+      "index": 1,
+      "chapter": 1,
+      "verse": 2,
+      "character_count": 123
+    },
+    {
+      "reference": "Mark 1:3",
+      "index": 2,
+      "chapter": 1,
+      "verse": 3,
+      "character_count": 88
+    },
+    {
+      "reference": "Mark 1:4",
+      "index": 3,
+      "chapter": 1,
+      "verse": 4,
+      "character_count": 89
+    },
+    {
+      "reference": "Mark 1:5",
+      "index": 4,
+      "chapter": 1,
+      "verse": 5,
+      "character_count": 162
+    },
+    {
+      "reference": "Mark 1:6",
+      "index": 5,
+      "chapter": 1,
+      "verse": 6,
+      "character_count": 123
+    },
+    {
+      "reference": "Mark 1:7",
+      "index": 6,
+      "chapter": 1,
+      "verse": 7,
+      "character_count": 121
+    },
+    {
+      "reference": "Mark 1:8",
+      "index": 7,
+      "chapter": 1,
+      "verse": 8,
+      "character_count": 68
+    },
+    {
+      "reference": "Mark 1:9",
+      "index": 8,
+      "chapter": 1,
+      "verse": 9,
+      "character_count": 121
+    },
+    {
+      "reference": "Mark 1:10",
+      "index": 9,
+      "chapter": 1,
+      "verse": 10,
+      "character_count": 119
+    },
+    {
+      "reference": "Mark 1:11",
+      "index": 10,
+      "chapter": 1,
+      "verse": 11,
+      "character_count": 79
+    },
+    {
+      "reference": "Mark 1:12",
+      "index": 11,
+      "chapter": 1,
+      "verse": 12,
+      "character_count": 50
+    },
+    {
+      "reference": "Mark 1:13",
+      "index": 12,
+      "chapter": 1,
+      "verse": 13,
+      "character_count": 125
+    },
+    {
+      "reference": "Mark 1:14",
+      "index": 13,
+      "chapter": 1,
+      "verse": 14,
+      "character_count": 103
+    },
+    {
+      "reference": "Mark 1:15",
+      "index": 14,
+      "chapter": 1,
+      "verse": 15,
+      "character_count": 108
+    },
+    {
+      "reference": "Mark 1:16",
+      "index": 15,
+      "chapter": 1,
+      "verse": 16,
+      "character_count": 138
+    },
+    {
+      "reference": "Mark 1:17",
+      "index": 16,
+      "chapter": 1,
+      "verse": 17,
+      "character_count": 85
+    },
+    {
+      "reference": "Mark 1:18",
+      "index": 17,
+      "chapter": 1,
+      "verse": 18,
+      "character_count": 47
+    },
+    {
+      "reference": "Mark 1:19",
+      "index": 18,
+      "chapter": 1,
+      "verse": 19,
+      "character_count": 129
+    },
+    {
+      "reference": "Mark 1:20",
+      "index": 19,
+      "chapter": 1,
+      "verse": 20,
+      "character_count": 117
+    },
+    {
+      "reference": "Mark 1:21",
+      "index": 20,
+      "chapter": 1,
+      "verse": 21,
+      "character_count": 89
+    },
+    {
+      "reference": "Mark 1:22",
+      "index": 21,
+      "chapter": 1,
+      "verse": 22,
+      "character_count": 103
+    },
+    {
+      "reference": "Mark 1:23",
+      "index": 22,
+      "chapter": 1,
+      "verse": 23,
+      "character_count": 78
+    },
+    {
+      "reference": "Mark 1:24",
+      "index": 23,
+      "chapter": 1,
+      "verse": 24,
+      "character_count": 95
+    },
+    {
+      "reference": "Mark 1:25",
+      "index": 24,
+      "chapter": 1,
+      "verse": 25,
+      "character_count": 65
+    },
+    {
+      "reference": "Mark 1:26",
+      "index": 25,
+      "chapter": 1,
+      "verse": 26,
+      "character_count": 84
+    },
+    {
+      "reference": "Mark 1:27",
+      "index": 26,
+      "chapter": 1,
+      "verse": 27,
+      "character_count": 177
+    },
+    {
+      "reference": "Mark 1:28",
+      "index": 27,
+      "chapter": 1,
+      "verse": 28,
+      "character_count": 80
+    },
+    {
+      "reference": "Mark 1:29",
+      "index": 28,
+      "chapter": 1,
+      "verse": 29,
+      "character_count": 107
+    },
+    {
+      "reference": "Mark 1:30",
+      "index": 29,
+      "chapter": 1,
+      "verse": 30,
+      "character_count": 79
+    },
+    {
+      "reference": "Mark 1:31",
+      "index": 30,
+      "chapter": 1,
+      "verse": 31,
+      "character_count": 99
+    },
+    {
+      "reference": "Mark 1:32",
+      "index": 31,
+      "chapter": 1,
+      "verse": 32,
+      "character_count": 107
+    },
+    {
+      "reference": "Mark 1:33",
+      "index": 32,
+      "chapter": 1,
+      "verse": 33,
+      "character_count": 49
+    },
+    {
+      "reference": "Mark 1:34",
+      "index": 33,
+      "chapter": 1,
+      "verse": 34,
+      "character_count": 138
+    },
+    {
+      "reference": "Mark 1:35",
+      "index": 34,
+      "chapter": 1,
+      "verse": 35,
+      "character_count": 83
+    },
+    {
+      "reference": "Mark 1:36",
+      "index": 35,
+      "chapter": 1,
+      "verse": 36,
+      "character_count": 47
+    },
+    {
+      "reference": "Mark 1:37",
+      "index": 36,
+      "chapter": 1,
+      "verse": 37,
+      "character_count": 61
+    },
+    {
+      "reference": "Mark 1:38",
+      "index": 37,
+      "chapter": 1,
+      "verse": 38,
+      "character_count": 107
+    },
+    {
+      "reference": "Mark 1:39",
+      "index": 38,
+      "chapter": 1,
+      "verse": 39,
+      "character_count": 94
+    },
+    {
+      "reference": "Mark 1:40",
+      "index": 39,
+      "chapter": 1,
+      "verse": 40,
+      "character_count": 107
+    },
+    {
+      "reference": "Mark 1:41",
+      "index": 40,
+      "chapter": 1,
+      "verse": 41,
+      "character_count": 83
+    },
+    {
+      "reference": "Mark 1:42",
+      "index": 41,
+      "chapter": 1,
+      "verse": 42,
+      "character_count": 53
+    },
+    {
+      "reference": "Mark 1:43",
+      "index": 42,
+      "chapter": 1,
+      "verse": 43,
+      "character_count": 46
+    },
+    {
+      "reference": "Mark 1:44",
+      "index": 43,
+      "chapter": 1,
+      "verse": 44,
+      "character_count": 155
+    },
+    {
+      "reference": "Mark 1:45",
+      "index": 44,
+      "chapter": 1,
+      "verse": 45,
+      "character_count": 185
+    }
+  ],
+  "clauses": [
+    {
+      "clause_id": "mark-01-01-a",
+      "start": {
+        "reference": "Mark 1:1",
+        "verse_index": 0,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:1",
+        "verse_index": 0,
+        "offset": 35
+      },
+      "references": [
+        "Mark 1:1"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Announces the beginning of Jesus' gospel.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-02-a",
+      "start": {
+        "reference": "Mark 1:2",
+        "verse_index": 1,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:2",
+        "verse_index": 1,
+        "offset": 123
+      },
+      "references": [
+        "Mark 1:2"
+      ],
+      "category_tags": [
+        "main",
+        "quotation"
+      ],
+      "function": "Introduces prophetic citation about the messenger.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "source": "Isa 40:3; Mal 3:1"
+      }
+    },
+    {
+      "clause_id": "mark-01-03-a",
+      "start": {
+        "reference": "Mark 1:3",
+        "verse_index": 2,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:3",
+        "verse_index": 2,
+        "offset": 88
+      },
+      "references": [
+        "Mark 1:3"
+      ],
+      "category_tags": [
+        "main",
+        "quotation"
+      ],
+      "function": "Quotes the voice calling in the wilderness.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "source": "Isa 40:3"
+      }
+    },
+    {
+      "clause_id": "mark-01-04-a",
+      "start": {
+        "reference": "Mark 1:4",
+        "verse_index": 3,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:4",
+        "verse_index": 3,
+        "offset": 89
+      },
+      "references": [
+        "Mark 1:4"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Describes John's preaching of repentance.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-05-a",
+      "start": {
+        "reference": "Mark 1:5",
+        "verse_index": 4,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:5",
+        "verse_index": 4,
+        "offset": 162
+      },
+      "references": [
+        "Mark 1:5"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Crowds come to John for baptism.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-06-a",
+      "start": {
+        "reference": "Mark 1:6",
+        "verse_index": 5,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:6",
+        "verse_index": 5,
+        "offset": 123
+      },
+      "references": [
+        "Mark 1:6"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Describes John's appearance and diet.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-07-a",
+      "start": {
+        "reference": "Mark 1:7",
+        "verse_index": 6,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:7",
+        "verse_index": 6,
+        "offset": 121
+      },
+      "references": [
+        "Mark 1:7"
+      ],
+      "category_tags": [
+        "main",
+        "narrative",
+        "speech"
+      ],
+      "function": "John declares the mightier one is coming.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "John the Baptist"
+      }
+    },
+    {
+      "clause_id": "mark-01-08-a",
+      "start": {
+        "reference": "Mark 1:8",
+        "verse_index": 7,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:8",
+        "verse_index": 7,
+        "offset": 68
+      },
+      "references": [
+        "Mark 1:8"
+      ],
+      "category_tags": [
+        "main",
+        "speech"
+      ],
+      "function": "John contrasts his baptism with the Spirit.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "John the Baptist"
+      }
+    },
+    {
+      "clause_id": "mark-01-09-a",
+      "start": {
+        "reference": "Mark 1:9",
+        "verse_index": 8,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:9",
+        "verse_index": 8,
+        "offset": 121
+      },
+      "references": [
+        "Mark 1:9"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Jesus arrives from Nazareth for baptism.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-10-a",
+      "start": {
+        "reference": "Mark 1:10",
+        "verse_index": 9,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:10",
+        "verse_index": 9,
+        "offset": 119
+      },
+      "references": [
+        "Mark 1:10"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Heaven opens as Jesus emerges from the water.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-11-a",
+      "start": {
+        "reference": "Mark 1:11",
+        "verse_index": 10,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:11",
+        "verse_index": 10,
+        "offset": 79
+      },
+      "references": [
+        "Mark 1:11"
+      ],
+      "category_tags": [
+        "main",
+        "speech"
+      ],
+      "function": "Heavenly voice affirms Jesus as beloved Son.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Divine voice"
+      }
+    },
+    {
+      "clause_id": "mark-01-12-a",
+      "start": {
+        "reference": "Mark 1:12",
+        "verse_index": 11,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:12",
+        "verse_index": 11,
+        "offset": 50
+      },
+      "references": [
+        "Mark 1:12"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Spirit drives Jesus into the wilderness.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-13-a",
+      "start": {
+        "reference": "Mark 1:13",
+        "verse_index": 12,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:13",
+        "verse_index": 12,
+        "offset": 125
+      },
+      "references": [
+        "Mark 1:13"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Jesus is tempted and tended by angels.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-14-a",
+      "start": {
+        "reference": "Mark 1:14",
+        "verse_index": 13,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:14",
+        "verse_index": 13,
+        "offset": 103
+      },
+      "references": [
+        "Mark 1:14"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "After John's arrest Jesus proclaims God's gospel.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-15-a",
+      "start": {
+        "reference": "Mark 1:15",
+        "verse_index": 14,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:15",
+        "verse_index": 14,
+        "offset": 108
+      },
+      "references": [
+        "Mark 1:15"
+      ],
+      "category_tags": [
+        "main",
+        "speech"
+      ],
+      "function": "Jesus announces the kingdom and calls for repentance.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Jesus"
+      }
+    },
+    {
+      "clause_id": "mark-01-16-a",
+      "start": {
+        "reference": "Mark 1:16",
+        "verse_index": 15,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:16",
+        "verse_index": 15,
+        "offset": 138
+      },
+      "references": [
+        "Mark 1:16"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Jesus sees Simon and Andrew fishing.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-17-a",
+      "start": {
+        "reference": "Mark 1:17",
+        "verse_index": 16,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:17",
+        "verse_index": 16,
+        "offset": 85
+      },
+      "references": [
+        "Mark 1:17"
+      ],
+      "category_tags": [
+        "main",
+        "speech"
+      ],
+      "function": "Jesus invites Simon and Andrew to follow him.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Jesus",
+        "audience": [
+          "Simon",
+          "Andrew"
+        ]
+      }
+    },
+    {
+      "clause_id": "mark-01-18-a",
+      "start": {
+        "reference": "Mark 1:18",
+        "verse_index": 17,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:18",
+        "verse_index": 17,
+        "offset": 47
+      },
+      "references": [
+        "Mark 1:18"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "They immediately leave nets to follow Jesus.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-19-a",
+      "start": {
+        "reference": "Mark 1:19",
+        "verse_index": 18,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:19",
+        "verse_index": 18,
+        "offset": 129
+      },
+      "references": [
+        "Mark 1:19"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Jesus sees James and John mending nets.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-20-a",
+      "start": {
+        "reference": "Mark 1:20",
+        "verse_index": 19,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:20",
+        "verse_index": 19,
+        "offset": 117
+      },
+      "references": [
+        "Mark 1:20"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "He calls them and they follow, leaving their father.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-21-a",
+      "start": {
+        "reference": "Mark 1:21",
+        "verse_index": 20,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:21",
+        "verse_index": 20,
+        "offset": 89
+      },
+      "references": [
+        "Mark 1:21"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Jesus enters Capernaum and teaches on the Sabbath.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-22-a",
+      "start": {
+        "reference": "Mark 1:22",
+        "verse_index": 21,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:22",
+        "verse_index": 21,
+        "offset": 103
+      },
+      "references": [
+        "Mark 1:22"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Crowd amazed at Jesus' authoritative teaching.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-23-a",
+      "start": {
+        "reference": "Mark 1:23",
+        "verse_index": 22,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:23",
+        "verse_index": 22,
+        "offset": 78
+      },
+      "references": [
+        "Mark 1:23"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Unclean spirit possesses man cries out in synagogue.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-24-a",
+      "start": {
+        "reference": "Mark 1:24",
+        "verse_index": 23,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:24",
+        "verse_index": 23,
+        "offset": 95
+      },
+      "references": [
+        "Mark 1:24"
+      ],
+      "category_tags": [
+        "main",
+        "speech"
+      ],
+      "function": "Spirit confronts Jesus in the synagogue.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Unclean spirit"
+      }
+    },
+    {
+      "clause_id": "mark-01-25-a",
+      "start": {
+        "reference": "Mark 1:25",
+        "verse_index": 24,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:25",
+        "verse_index": 24,
+        "offset": 65
+      },
+      "references": [
+        "Mark 1:25"
+      ],
+      "category_tags": [
+        "main",
+        "speech",
+        "miracle"
+      ],
+      "function": "Jesus rebukes the spirit to be silent and leave.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Jesus",
+        "audience": [
+          "Unclean spirit"
+        ]
+      }
+    },
+    {
+      "clause_id": "mark-01-26-a",
+      "start": {
+        "reference": "Mark 1:26",
+        "verse_index": 25,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:26",
+        "verse_index": 25,
+        "offset": 84
+      },
+      "references": [
+        "Mark 1:26"
+      ],
+      "category_tags": [
+        "main",
+        "narrative",
+        "miracle"
+      ],
+      "function": "Spirit convulses the man and departs.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-27-a",
+      "start": {
+        "reference": "Mark 1:27",
+        "verse_index": 26,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:27",
+        "verse_index": 26,
+        "offset": 177
+      },
+      "references": [
+        "Mark 1:27"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "People marvel at Jesus’ authority and power.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-28-a",
+      "start": {
+        "reference": "Mark 1:28",
+        "verse_index": 27,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:28",
+        "verse_index": 27,
+        "offset": 80
+      },
+      "references": [
+        "Mark 1:28"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Jesus' fame spreads throughout Galilee.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-29-a",
+      "start": {
+        "reference": "Mark 1:29",
+        "verse_index": 28,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:29",
+        "verse_index": 28,
+        "offset": 107
+      },
+      "references": [
+        "Mark 1:29"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Jesus leaves synagogue for Simon's house.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-30-a",
+      "start": {
+        "reference": "Mark 1:30",
+        "verse_index": 29,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:30",
+        "verse_index": 29,
+        "offset": 79
+      },
+      "references": [
+        "Mark 1:30"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "They tell Jesus about Simon's fevered mother-in-law.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-31-a",
+      "start": {
+        "reference": "Mark 1:31",
+        "verse_index": 30,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:31",
+        "verse_index": 30,
+        "offset": 99
+      },
+      "references": [
+        "Mark 1:31"
+      ],
+      "category_tags": [
+        "main",
+        "narrative",
+        "miracle"
+      ],
+      "function": "Jesus heals her and she serves them.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-32-a",
+      "start": {
+        "reference": "Mark 1:32",
+        "verse_index": 31,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:32",
+        "verse_index": 31,
+        "offset": 107
+      },
+      "references": [
+        "Mark 1:32"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Crowds bring sick and demonized people at sundown.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-33-a",
+      "start": {
+        "reference": "Mark 1:33",
+        "verse_index": 32,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:33",
+        "verse_index": 32,
+        "offset": 49
+      },
+      "references": [
+        "Mark 1:33"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Whole town gathers at the door.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-34-a",
+      "start": {
+        "reference": "Mark 1:34",
+        "verse_index": 33,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:34",
+        "verse_index": 33,
+        "offset": 138
+      },
+      "references": [
+        "Mark 1:34"
+      ],
+      "category_tags": [
+        "main",
+        "narrative",
+        "miracle"
+      ],
+      "function": "Jesus heals many and silences the demons.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-35-a",
+      "start": {
+        "reference": "Mark 1:35",
+        "verse_index": 34,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:35",
+        "verse_index": 34,
+        "offset": 83
+      },
+      "references": [
+        "Mark 1:35"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Jesus prays alone before dawn.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-36-a",
+      "start": {
+        "reference": "Mark 1:36",
+        "verse_index": 35,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:36",
+        "verse_index": 35,
+        "offset": 47
+      },
+      "references": [
+        "Mark 1:36"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Simon and companions search for Jesus.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-37-a",
+      "start": {
+        "reference": "Mark 1:37",
+        "verse_index": 36,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:37",
+        "verse_index": 36,
+        "offset": 61
+      },
+      "references": [
+        "Mark 1:37"
+      ],
+      "category_tags": [
+        "main",
+        "speech"
+      ],
+      "function": "Disciples report that everyone is looking for Jesus.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Companions of Jesus"
+      }
+    },
+    {
+      "clause_id": "mark-01-38-a",
+      "start": {
+        "reference": "Mark 1:38",
+        "verse_index": 37,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:38",
+        "verse_index": 37,
+        "offset": 107
+      },
+      "references": [
+        "Mark 1:38"
+      ],
+      "category_tags": [
+        "main",
+        "speech"
+      ],
+      "function": "Jesus says they must go preach in other towns.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Jesus"
+      }
+    },
+    {
+      "clause_id": "mark-01-39-a",
+      "start": {
+        "reference": "Mark 1:39",
+        "verse_index": 38,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:39",
+        "verse_index": 38,
+        "offset": 94
+      },
+      "references": [
+        "Mark 1:39"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "He preaches throughout Galilee casting out demons.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-40-a",
+      "start": {
+        "reference": "Mark 1:40",
+        "verse_index": 39,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:40",
+        "verse_index": 39,
+        "offset": 107
+      },
+      "references": [
+        "Mark 1:40"
+      ],
+      "category_tags": [
+        "main",
+        "speech",
+        "miracle"
+      ],
+      "function": "Leper begs Jesus for cleansing.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Leper"
+      }
+    },
+    {
+      "clause_id": "mark-01-41-a",
+      "start": {
+        "reference": "Mark 1:41",
+        "verse_index": 40,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:41",
+        "verse_index": 40,
+        "offset": 83
+      },
+      "references": [
+        "Mark 1:41"
+      ],
+      "category_tags": [
+        "main",
+        "speech",
+        "miracle"
+      ],
+      "function": "Jesus touches him and commands cleansing.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Jesus",
+        "audience": [
+          "Leper"
+        ]
+      }
+    },
+    {
+      "clause_id": "mark-01-42-a",
+      "start": {
+        "reference": "Mark 1:42",
+        "verse_index": 41,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:42",
+        "verse_index": 41,
+        "offset": 53
+      },
+      "references": [
+        "Mark 1:42"
+      ],
+      "category_tags": [
+        "main",
+        "narrative",
+        "miracle"
+      ],
+      "function": "Leprosy leaves immediately and he is cleansed.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-43-a",
+      "start": {
+        "reference": "Mark 1:43",
+        "verse_index": 42,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:43",
+        "verse_index": 42,
+        "offset": 46
+      },
+      "references": [
+        "Mark 1:43"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "Jesus sternly sends the man away.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    },
+    {
+      "clause_id": "mark-01-44-a",
+      "start": {
+        "reference": "Mark 1:44",
+        "verse_index": 43,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:44",
+        "verse_index": 43,
+        "offset": 155
+      },
+      "references": [
+        "Mark 1:44"
+      ],
+      "category_tags": [
+        "main",
+        "speech"
+      ],
+      "function": "Jesus instructs him to show the priest and offer sacrifice.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Jesus",
+        "audience": [
+          "Healed leper"
+        ]
+      }
+    },
+    {
+      "clause_id": "mark-01-45-a",
+      "start": {
+        "reference": "Mark 1:45",
+        "verse_index": 44,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:45",
+        "verse_index": 44,
+        "offset": 185
+      },
+      "references": [
+        "Mark 1:45"
+      ],
+      "category_tags": [
+        "main",
+        "narrative"
+      ],
+      "function": "The man publicizes the miracle, restricting Jesus to solitary places.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      }
+    }
+  ],
+  "categories": [
+    "main",
+    "miracle",
+    "narrative",
+    "quotation",
+    "speech"
+  ]
+}
