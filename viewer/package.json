@@ -12,5 +12,9 @@
   ],
   "author": "",
   "license": "MIT",
-  "type": "commonjs"
+  "type": "commonjs",
+  "config": {
+    "viewerCoverageThreshold": 80,
+    "viewerCoverageTarget": "js/main.js"
+  }
 }

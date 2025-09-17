@@ -439,3 +439,151 @@ test("bootstrap attaches the viewer to the provided global object", async () => 
 
   assert.equal(fetchMock.mock.calls.length, 1);
 });
+
+
+test("configure updates the data url and status messages", async () => {
+  const { doc, statusEl } = buildDocument();
+  const fetchMock = mock.fn(async () => ({
+    ok: true,
+    status: 200,
+    async json() {
+      return {
+        display_name: "Custom",
+        header: "Header",
+        verses: [
+          { reference: "Mk 1:1", text: "Ἀρχὴ" },
+        ],
+      };
+    },
+  }));
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock });
+
+  const initialConfig = viewer.configure();
+  assert.equal(initialConfig.dataUrl, "data/mark.json");
+  assert.equal(initialConfig.statusMessages.empty, "No verse data available.");
+
+  const updatedConfig = viewer.configure({
+    dataUrl: "data/custom.json",
+    statusMessages: {
+      empty: "Nothing to display.",
+      loading: "Loading custom data…",
+    },
+  });
+
+  assert.equal(updatedConfig.dataUrl, "data/custom.json");
+  assert.equal(updatedConfig.statusMessages.empty, "Nothing to display.");
+  assert.equal(updatedConfig.statusMessages.loading, "Loading custom data…");
+
+  viewer.renderVerses([]);
+  assert.equal(statusEl.textContent, "Nothing to display.");
+
+  const payload = await viewer.loadBook();
+  assert.ok(payload);
+  assert.equal(fetchMock.mock.calls.length, 1);
+  assert.deepEqual(fetchMock.mock.calls[0].arguments, ["data/custom.json", { cache: "no-cache" }]);
+});
+
+test("configure ignores invalid updates", () => {
+  const { doc } = buildDocument();
+  const viewer = createViewer({ document: doc });
+
+  const configAfterInvalid = viewer.configure({
+    dataUrl: "   ",
+    statusMessages: { empty: 42, loading: null },
+  });
+
+  assert.equal(configAfterInvalid.dataUrl, "data/mark.json");
+  assert.equal(configAfterInvalid.statusMessages.empty, "No verse data available.");
+  assert.equal(configAfterInvalid.statusMessages.loading, "Loading the SBLGNT text…");
+
+  const snapshot = viewer.configure("not-an-object");
+  assert.equal(snapshot.dataUrl, "data/mark.json");
+  assert.equal(snapshot.statusMessages.loading, "Loading the SBLGNT text…");
+});
+
+test("bootstrap reads viewer config from the global object", async () => {
+  const { doc, statusEl } = buildDocument();
+  doc.readyState = "complete";
+  const fetchMock = mock.fn(async () => ({
+    ok: true,
+    status: 200,
+    async json() {
+      return {
+        display_name: "Acts",
+        header: "",
+        verses: [],
+      };
+    },
+  }));
+
+  const globalObject = {
+    document: doc,
+    fetch: fetchMock,
+    console: { error() {} },
+    SBLGNTViewerConfig: {
+      dataUrl: "data/acts.json",
+      statusMessages: {
+        loading: "Loading Acts…",
+        empty: "Acts data unavailable.",
+      },
+      globalPropertyName: "ConfiguredViewer",
+      autoInit: false,
+    },
+  };
+
+  const viewerInstance = bootstrap(globalObject);
+
+  assert.ok(viewerInstance);
+  assert.equal(globalObject.ConfiguredViewer, viewerInstance);
+  assert.equal(fetchMock.mock.calls.length, 0);
+
+  const snapshot = viewerInstance.configure();
+  assert.equal(snapshot.dataUrl, "data/acts.json");
+  assert.equal(snapshot.statusMessages.loading, "Loading Acts…");
+
+  const loadPromise = viewerInstance.loadBook();
+  assert.equal(statusEl.textContent, "Loading Acts…");
+  await loadPromise;
+
+  assert.equal(fetchMock.mock.calls.length, 1);
+  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/acts.json");
+});
+
+test("bootstrap accepts a configuration object as the first argument", async () => {
+  const { doc } = buildDocument();
+  doc.readyState = "loading";
+  const fetchMock = mock.fn(async () => ({
+    ok: true,
+    status: 200,
+    async json() {
+      return {
+        display_name: "John",
+        header: "",
+        verses: [],
+      };
+    },
+  }));
+
+  const globalObject = { document: doc, fetch: fetchMock, console: { error() {} } };
+
+  const viewerInstance = bootstrap({
+    globalTarget: globalObject,
+    dataUrl: "data/john.json",
+    autoInit: false,
+    globalPropertyName: "MyViewer",
+  });
+
+  assert.equal(globalObject.MyViewer, viewerInstance);
+  assert.equal(fetchMock.mock.calls.length, 0);
+
+  const config = viewerInstance.configure();
+  assert.equal(config.dataUrl, "data/john.json");
+
+  viewerInstance.init();
+  doc.dispatchEvent({ type: "DOMContentLoaded" });
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, 1);
+  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/john.json");
+});
