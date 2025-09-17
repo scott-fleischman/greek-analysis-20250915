@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SBLGNT Viewer · Gospel of Mark</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-shell">
+        <p class="app-overline">Greek Text Viewer</p>
+        <h1 id="book-display" class="app-title">Loading…</h1>
+        <p id="book-header" class="app-subtitle" aria-live="polite"></p>
+      </div>
+    </header>
+    <main class="app-shell" aria-live="polite">
+      <noscript>
+        <p class="notice">Enable JavaScript to load the Gospel of Mark text.</p>
+      </noscript>
+      <div id="viewer-status" class="notice" role="status" aria-live="assertive"></div>
+      <section id="text-container" class="verse-list" aria-label="SBLGNT text"></section>
+    </main>
+    <footer class="app-footer">
+      <div class="app-shell">
+        <p>
+          Source: Society of Biblical Literature Greek New Testament (SBLGNT).
+          Data path: <code>external-data/SBLGNT/data/sblgnt/text/Mark.txt</code>
+        </p>
+      </div>
+    </footer>
+    <script src="js/main.js"></script>
+  </body>
+</html>
