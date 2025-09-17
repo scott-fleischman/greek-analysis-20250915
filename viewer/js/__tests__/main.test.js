@@ -16,6 +16,9 @@ class MockElement {
     this.className = "";
     this._textContent = "";
     this._innerHTML = "";
+    this.eventListeners = new Map();
+    this.value = "";
+    this.disabled = false;
   }
 
   append(...nodes) {
@@ -77,6 +80,53 @@ class MockElement {
 
     visit(this);
     return matches;
+  }
+
+  addEventListener(type, handler) {
+    if (!type || typeof handler !== "function") {
+      return;
+    }
+    if (!this.eventListeners.has(type)) {
+      this.eventListeners.set(type, new Set());
+    }
+    this.eventListeners.get(type).add(handler);
+  }
+
+  removeEventListener(type, handler) {
+    const listeners = this.eventListeners.get(type);
+    if (!listeners) {
+      return;
+    }
+    listeners.delete(handler);
+  }
+
+  dispatchEvent(event) {
+    if (!event || typeof event.type !== "string") {
+      return true;
+    }
+
+    const listeners = this.eventListeners.get(event.type);
+    if (!listeners || listeners.size === 0) {
+      return true;
+    }
+
+    const eventObject = {
+      ...event,
+      type: event.type,
+      target: this,
+      currentTarget: this,
+      defaultPrevented: false,
+    };
+
+    eventObject.preventDefault = () => {
+      eventObject.defaultPrevented = true;
+    };
+
+    for (const handler of listeners) {
+      handler.call(this, eventObject);
+    }
+
+    return !eventObject.defaultPrevented;
   }
 }
 
@@ -142,13 +192,18 @@ class MockDocument {
   }
 }
 
-function buildDocument() {
+function buildDocument({ includeSelector = true } = {}) {
   const doc = new MockDocument();
   const statusEl = doc.register("viewer-status", new MockElement("div"));
   const containerEl = doc.register("text-container", new MockElement("section"));
   const displayEl = doc.register("book-display", new MockElement("h1"));
   const headerEl = doc.register("book-header", new MockElement("p"));
-  return { doc, statusEl, containerEl, displayEl, headerEl };
+  let selectorEl = null;
+  if (includeSelector) {
+    selectorEl = doc.register("book-selector", new MockElement("select"));
+    selectorEl.disabled = true;
+  }
+  return { doc, statusEl, containerEl, displayEl, headerEl, selectorEl };
 }
 
 async function flushAsyncOperations() {
@@ -320,19 +375,43 @@ test("init returns false when required elements are missing", () => {
 });
 
 test("init waits for DOMContentLoaded when the document is loading", async () => {
-  const { doc } = buildDocument();
+  const { doc, selectorEl } = buildDocument();
   doc.readyState = "loading";
-  const fetchMock = mock.fn(async () => ({
-    ok: true,
-    status: 200,
-    async json() {
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/manifest.json") {
       return {
-        display_name: "Mark",
-        header: "",
-        verses: [{ reference: "Mk 1:1", text: "Ἀρχὴ" }],
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              {
+                book_id: "mark",
+                display_name: "Gospel of Mark",
+                data_url: "data/mark.json",
+              },
+            ],
+          };
+        },
       };
-    },
-  }));
+    }
+
+    if (url === "data/mark.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Mark",
+            header: "",
+            verses: [{ reference: "Mk 1:1", text: "Ἀρχὴ" }],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
 
   const viewer = createViewer({ document: doc, fetch: fetchMock });
 
@@ -341,48 +420,490 @@ test("init waits for DOMContentLoaded when the document is loading", async () =>
 
   doc.dispatchEvent({ type: "DOMContentLoaded" });
   await flushAsyncOperations();
+  await flushAsyncOperations();
 
-  assert.equal(fetchMock.mock.calls.length, 1);
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/manifest.json");
+  assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
+  assert.equal(selectorEl.disabled, false);
+  assert.equal(selectorEl.value, "mark");
 });
 
 test("init triggers a load immediately when the document is ready", async () => {
-  const { doc } = buildDocument();
-  const fetchMock = mock.fn(async () => ({
-    ok: true,
-    status: 200,
-    async json() {
+  const { doc, selectorEl } = buildDocument();
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/manifest.json") {
       return {
-        display_name: "Mark",
-        header: "",
-        verses: [],
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              {
+                book_id: "mark",
+                display_name: "Gospel of Mark",
+                data_url: "data/mark.json",
+              },
+            ],
+          };
+        },
       };
-    },
-  }));
+    }
+
+    if (url === "data/mark.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Mark",
+            header: "",
+            verses: [],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
 
   const viewer = createViewer({ document: doc, fetch: fetchMock });
 
   assert.equal(viewer.init(), true);
   await flushAsyncOperations();
+  await flushAsyncOperations();
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/manifest.json");
+  assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
+  assert.equal(selectorEl.disabled, false);
+});
+
+test("changing the selector triggers a new book load", async () => {
+  const { doc, selectorEl, displayEl } = buildDocument();
+  doc.readyState = "complete";
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/manifest.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              {
+                book_id: "mark",
+                display_name: "Gospel of Mark",
+                data_url: "data/mark.json",
+              },
+              {
+                book_id: "matthew",
+                display_name: "Gospel of Matthew",
+                data_url: "data/matthew.json",
+              },
+            ],
+          };
+        },
+      };
+    }
+
+    if (url === "data/mark.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Gospel of Mark",
+            header: "",
+            verses: [{ reference: "Mk 1:1", text: "Ἀρχὴ" }],
+          };
+        },
+      };
+    }
+
+    if (url === "data/matthew.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Gospel of Matthew",
+            header: "",
+            verses: [{ reference: "Mt 1:1", text: "Βίβλος" }],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock });
+
+  viewer.init();
+  await flushAsyncOperations();
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.equal(selectorEl.children.length, 2);
+  assert.equal(selectorEl.value, "mark");
+  assert.equal(displayEl.textContent, "Gospel of Mark");
+
+  selectorEl.value = "matthew";
+  selectorEl.dispatchEvent({ type: "change" });
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, 3);
+  assert.equal(fetchMock.mock.calls[2].arguments[0], "data/matthew.json");
+  assert.equal(selectorEl.value, "matthew");
+  assert.equal(displayEl.textContent, "Gospel of Matthew");
+});
+
+test("viewer skips manifest loading when the selector is absent", async () => {
+  const { doc } = buildDocument({ includeSelector: false });
+  doc.readyState = "complete";
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/mark.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Mark",
+            header: "",
+            verses: [],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock });
+
+  viewer.init();
+  await flushAsyncOperations();
+
   assert.equal(fetchMock.mock.calls.length, 1);
+  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/mark.json");
+});
+
+test("init falls back to book loading when the manifest request fails", async () => {
+  const { doc, selectorEl, statusEl } = buildDocument();
+  doc.readyState = "complete";
+  const consoleMock = { error: mock.fn() };
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/manifest.json") {
+      return {
+        ok: false,
+        status: 503,
+        async json() {
+          return {};
+        },
+      };
+    }
+
+    if (url === "data/mark.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Mark",
+            header: "",
+            verses: [],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock, console: consoleMock });
+
+  viewer.init();
+  await flushAsyncOperations();
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/manifest.json");
+  assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
+  assert.equal(selectorEl.disabled, true);
+  assert.equal(consoleMock.error.mock.calls.length, 1);
+  assert.equal(statusEl.textContent, "");
+});
+
+test("loadManifest filters invalid entries and normalizes keys", async () => {
+  const { doc, selectorEl, displayEl } = buildDocument();
+  doc.readyState = "complete";
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/manifest.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              null,
+              { book_id: "   ", data_url: "data/ignored.json" },
+              { book_id: "luke", data_url: "data/luke.json" },
+              {
+                bookId: "acts",
+                dataUrl: "data/acts.json",
+                displayName: "Acts of the Apostles",
+              },
+              { book_id: "invalid", data_url: "   " },
+            ],
+          };
+        },
+      };
+    }
+
+    if (url === "data/luke.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Luke",
+            header: "",
+            verses: [],
+          };
+        },
+      };
+    }
+
+    if (url === "data/acts.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Acts of the Apostles",
+            header: "",
+            verses: [],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock });
+
+  viewer.init();
+  await flushAsyncOperations();
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.equal(selectorEl.children.length, 2);
+  assert.equal(selectorEl.children[0].textContent, "luke");
+  assert.equal(selectorEl.children[1].textContent, "Acts of the Apostles");
+  assert.equal(selectorEl.value, "luke");
+  assert.equal(displayEl.textContent, "Luke");
+
+  selectorEl.value = "acts";
+  selectorEl.dispatchEvent({ type: "change" });
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, 3);
+  assert.equal(fetchMock.mock.calls[2].arguments[0], "data/acts.json");
+  assert.equal(displayEl.textContent, "Acts of the Apostles");
+});
+
+test("loadManifest returns null when the selector element is absent", async () => {
+  const { doc } = buildDocument({ includeSelector: false });
+  const fetchMock = mock.fn();
+  const viewer = createViewer({ document: doc, fetch: fetchMock });
+
+  const result = await viewer.loadManifest();
+
+  assert.equal(result, null);
+  assert.equal(fetchMock.mock.calls.length, 0);
+});
+
+test("loadManifest reports missing fetch implementations", async () => {
+  const { doc, selectorEl } = buildDocument();
+  const consoleMock = { error: mock.fn() };
+
+  const viewer = createViewer({ document: doc, fetch: null, console: consoleMock });
+
+  const result = await viewer.loadManifest();
+
+  assert.equal(result, null);
+  assert.equal(selectorEl.disabled, true);
+  assert.equal(consoleMock.error.mock.calls.length, 1);
+});
+
+test("loadManifest handles payloads without book listings", async () => {
+  const { doc, selectorEl } = buildDocument();
+  const consoleMock = { error: mock.fn() };
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/manifest.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { version: 1 };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock, console: consoleMock });
+
+  const result = await viewer.loadManifest();
+
+  assert.equal(result, null);
+  assert.equal(fetchMock.mock.calls.length, 1);
+  assert.equal(selectorEl.disabled, true);
+  assert.equal(consoleMock.error.mock.calls.length, 1);
+});
+
+test("loadManifest rejects manifests without usable entries", async () => {
+  const { doc, selectorEl } = buildDocument();
+  const consoleMock = { error: mock.fn() };
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/manifest.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              { book_id: "   ", data_url: "" },
+              { bookId: "", dataUrl: "data/unused.json" },
+            ],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock, console: consoleMock });
+
+  const result = await viewer.loadManifest();
+
+  assert.equal(result, null);
+  assert.equal(fetchMock.mock.calls.length, 1);
+  assert.equal(selectorEl.disabled, true);
+  assert.equal(consoleMock.error.mock.calls.length, 1);
+});
+
+test("selectBook ignores unknown ids and supports skipLoad", async () => {
+  const { doc, selectorEl } = buildDocument();
+  doc.readyState = "complete";
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/manifest.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              {
+                book_id: "mark",
+                display_name: "Gospel of Mark",
+                data_url: "data/mark.json",
+              },
+            ],
+          };
+        },
+      };
+    }
+
+    if (url === "data/mark.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Gospel of Mark",
+            header: "",
+            verses: [],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock });
+
+  viewer.init();
+  await flushAsyncOperations();
+  await flushAsyncOperations();
+
+  const baselineCalls = fetchMock.mock.calls.length;
+
+  const missingResult = await viewer.selectBook("unknown");
+  assert.equal(missingResult, null);
+  assert.equal(fetchMock.mock.calls.length, baselineCalls);
+
+  const skipResult = await viewer.selectBook(selectorEl.value, { skipLoad: true });
+  assert.equal(skipResult, null);
+  assert.equal(fetchMock.mock.calls.length, baselineCalls);
+
+  selectorEl.value = "unlisted";
+  selectorEl.dispatchEvent({ type: "change" });
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, baselineCalls);
+
+  selectorEl.value = "mark";
+  selectorEl.dispatchEvent({ type: "change" });
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, baselineCalls + 1);
 });
 
 test("browser build initializes itself in a window context", async () => {
   const filePath = path.join(__dirname, "../main.js");
   const source = fs.readFileSync(filePath, "utf8");
-  const { doc } = buildDocument();
+  const { doc, selectorEl } = buildDocument();
   doc.readyState = "loading";
 
-  const fetchMock = mock.fn(async () => ({
-    ok: true,
-    status: 200,
-    async json() {
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/manifest.json") {
       return {
-        display_name: "Mark",
-        header: "",
-        verses: [{ reference: "Mk 1:1", text: "Ἀρχὴ" }],
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              {
+                book_id: "mark",
+                display_name: "Gospel of Mark",
+                data_url: "data/mark.json",
+              },
+            ],
+          };
+        },
       };
-    },
-  }));
+    }
+
+    if (url === "data/mark.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Mark",
+            header: "",
+            verses: [{ reference: "Mk 1:1", text: "Ἀρχὴ" }],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
 
   const consoleMock = { error: mock.fn() };
 
@@ -409,23 +930,52 @@ test("browser build initializes itself in a window context", async () => {
   doc.dispatchEvent({ type: "DOMContentLoaded" });
   await flushAsyncOperations();
 
-  assert.equal(fetchMock.mock.calls.length, 1);
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/manifest.json");
+  assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
+  assert.equal(selectorEl.disabled, false);
 });
 
 test("bootstrap attaches the viewer to the provided global object", async () => {
-  const { doc } = buildDocument();
+  const { doc, selectorEl } = buildDocument();
   doc.readyState = "loading";
-  const fetchMock = mock.fn(async () => ({
-    ok: true,
-    status: 200,
-    async json() {
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/manifest.json") {
       return {
-        display_name: "Mark",
-        header: "",
-        verses: [{ reference: "Mk 1:1", text: "Ἀρχὴ" }],
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              {
+                book_id: "mark",
+                display_name: "Gospel of Mark",
+                data_url: "data/mark.json",
+              },
+            ],
+          };
+        },
       };
-    },
-  }));
+    }
+
+    if (url === "data/mark.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Mark",
+            header: "",
+            verses: [{ reference: "Mk 1:1", text: "Ἀρχὴ" }],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
 
   const globalObject = { document: doc, fetch: fetchMock, console: { error() {} } };
 
@@ -437,7 +987,12 @@ test("bootstrap attaches the viewer to the provided global object", async () => 
   doc.dispatchEvent({ type: "DOMContentLoaded" });
   await flushAsyncOperations();
 
-  assert.equal(fetchMock.mock.calls.length, 1);
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/manifest.json");
+  assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
+  assert.equal(selectorEl.disabled, false);
 });
 
 
@@ -461,10 +1016,12 @@ test("configure updates the data url and status messages", async () => {
 
   const initialConfig = viewer.configure();
   assert.equal(initialConfig.dataUrl, "data/mark.json");
+  assert.equal(initialConfig.manifestUrl, "data/manifest.json");
   assert.equal(initialConfig.statusMessages.empty, "No verse data available.");
 
   const updatedConfig = viewer.configure({
     dataUrl: "data/custom.json",
+    manifestUrl: "data/alt-manifest.json",
     statusMessages: {
       empty: "Nothing to display.",
       loading: "Loading custom data…",
@@ -472,6 +1029,7 @@ test("configure updates the data url and status messages", async () => {
   });
 
   assert.equal(updatedConfig.dataUrl, "data/custom.json");
+  assert.equal(updatedConfig.manifestUrl, "data/alt-manifest.json");
   assert.equal(updatedConfig.statusMessages.empty, "Nothing to display.");
   assert.equal(updatedConfig.statusMessages.loading, "Loading custom data…");
 
@@ -494,11 +1052,13 @@ test("configure ignores invalid updates", () => {
   });
 
   assert.equal(configAfterInvalid.dataUrl, "data/mark.json");
+  assert.equal(configAfterInvalid.manifestUrl, "data/manifest.json");
   assert.equal(configAfterInvalid.statusMessages.empty, "No verse data available.");
   assert.equal(configAfterInvalid.statusMessages.loading, "Loading the SBLGNT text…");
 
   const snapshot = viewer.configure("not-an-object");
   assert.equal(snapshot.dataUrl, "data/mark.json");
+  assert.equal(snapshot.manifestUrl, "data/manifest.json");
   assert.equal(snapshot.statusMessages.loading, "Loading the SBLGNT text…");
 });
 
@@ -523,6 +1083,7 @@ test("bootstrap reads viewer config from the global object", async () => {
     console: { error() {} },
     SBLGNTViewerConfig: {
       dataUrl: "data/acts.json",
+      manifestUrl: "data/custom-manifest.json",
       statusMessages: {
         loading: "Loading Acts…",
         empty: "Acts data unavailable.",
@@ -540,6 +1101,7 @@ test("bootstrap reads viewer config from the global object", async () => {
 
   const snapshot = viewerInstance.configure();
   assert.equal(snapshot.dataUrl, "data/acts.json");
+  assert.equal(snapshot.manifestUrl, "data/custom-manifest.json");
   assert.equal(snapshot.statusMessages.loading, "Loading Acts…");
 
   const loadPromise = viewerInstance.loadBook();
@@ -551,25 +1113,55 @@ test("bootstrap reads viewer config from the global object", async () => {
 });
 
 test("bootstrap accepts a configuration object as the first argument", async () => {
-  const { doc } = buildDocument();
+  const { doc, selectorEl } = buildDocument();
   doc.readyState = "loading";
-  const fetchMock = mock.fn(async () => ({
-    ok: true,
-    status: 200,
-    async json() {
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/custom-manifest.json") {
       return {
-        display_name: "John",
-        header: "",
-        verses: [],
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              {
+                book_id: "john",
+                display_name: "Gospel of John",
+                data_url: "data/john.json",
+              },
+              {
+                book_id: "mark",
+                display_name: "Gospel of Mark",
+                data_url: "data/mark.json",
+              },
+            ],
+          };
+        },
       };
-    },
-  }));
+    }
+
+    if (url === "data/john.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "John",
+            header: "",
+            verses: [],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
 
   const globalObject = { document: doc, fetch: fetchMock, console: { error() {} } };
 
   const viewerInstance = bootstrap({
     globalTarget: globalObject,
     dataUrl: "data/john.json",
+    manifestUrl: "data/custom-manifest.json",
     autoInit: false,
     globalPropertyName: "MyViewer",
   });
@@ -579,11 +1171,200 @@ test("bootstrap accepts a configuration object as the first argument", async () 
 
   const config = viewerInstance.configure();
   assert.equal(config.dataUrl, "data/john.json");
+  assert.equal(config.manifestUrl, "data/custom-manifest.json");
 
   viewerInstance.init();
   doc.dispatchEvent({ type: "DOMContentLoaded" });
   await flushAsyncOperations();
+  await flushAsyncOperations();
 
-  assert.equal(fetchMock.mock.calls.length, 1);
-  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/john.json");
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/custom-manifest.json");
+  assert.equal(fetchMock.mock.calls[1].arguments[0], "data/john.json");
+  assert.equal(selectorEl.disabled, false);
+  assert.equal(selectorEl.value, "john");
+});
+
+test("bootstrap merges optional configuration arguments", async () => {
+  const { doc, selectorEl } = buildDocument();
+  doc.readyState = "loading";
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/custom-manifest.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              {
+                book_id: "mark",
+                display_name: "Gospel of Mark",
+                data_url: "data/mark.json",
+              },
+            ],
+          };
+        },
+      };
+    }
+
+    if (url === "data/mark.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Gospel of Mark",
+            header: "",
+            verses: [],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const globalObject = { document: doc, fetch: fetchMock, console: { error() {} } };
+
+  const viewerInstance = bootstrap(globalObject, {
+    manifestUrl: "data/custom-manifest.json",
+    autoInit: false,
+  });
+
+  assert.equal(globalObject.SBLGNTViewer, viewerInstance);
+  assert.equal(fetchMock.mock.calls.length, 0);
+
+  viewerInstance.init();
+  doc.dispatchEvent({ type: "DOMContentLoaded" });
+  await flushAsyncOperations();
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/custom-manifest.json");
+  assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
+  assert.equal(selectorEl.disabled, false);
+});
+
+test("bootstrap allows overriding the global target via optional arguments", async () => {
+  const { doc, selectorEl } = buildDocument();
+  doc.readyState = "loading";
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/custom-manifest.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              {
+                book_id: "mark",
+                display_name: "Gospel of Mark",
+                data_url: "data/mark.json",
+              },
+            ],
+          };
+        },
+      };
+    }
+
+    if (url === "data/mark.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Gospel of Mark",
+            header: "",
+            verses: [],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const primaryGlobal = { document: doc, fetch: fetchMock, console: { error() {} } };
+  const secondaryGlobal = { document: doc, fetch: fetchMock, console: { error() {} } };
+
+  const viewerInstance = bootstrap(primaryGlobal, {
+    globalTarget: secondaryGlobal,
+    manifestUrl: "data/custom-manifest.json",
+    autoInit: false,
+  });
+
+  assert.equal(primaryGlobal.SBLGNTViewer, undefined);
+  assert.equal(secondaryGlobal.SBLGNTViewer, viewerInstance);
+
+  viewerInstance.init();
+  doc.dispatchEvent({ type: "DOMContentLoaded" });
+  await flushAsyncOperations();
+  await flushAsyncOperations();
+
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.equal(fetchMock.mock.calls[0].arguments[0], "data/custom-manifest.json");
+  assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
+  assert.equal(selectorEl.disabled, false);
+});
+
+test("bootstrap falls back to the global window object", async () => {
+  const { doc, selectorEl } = buildDocument();
+  doc.readyState = "loading";
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/manifest.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            books: [
+              {
+                book_id: "mark",
+                display_name: "Gospel of Mark",
+                data_url: "data/mark.json",
+              },
+            ],
+          };
+        },
+      };
+    }
+
+    if (url === "data/mark.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Gospel of Mark",
+            header: "",
+            verses: [],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const originalWindow = globalThis.window;
+  const windowObject = { document: doc, fetch: fetchMock, console: { error() {} } };
+  globalThis.window = windowObject;
+
+  try {
+    const viewerInstance = bootstrap({ autoInit: false });
+
+    assert.equal(windowObject.SBLGNTViewer, viewerInstance);
+
+    viewerInstance.init();
+    doc.dispatchEvent({ type: "DOMContentLoaded" });
+    await flushAsyncOperations();
+    await flushAsyncOperations();
+
+    assert.equal(fetchMock.mock.calls.length, 2);
+    assert.equal(fetchMock.mock.calls[0].arguments[0], "data/manifest.json");
+    assert.equal(fetchMock.mock.calls[1].arguments[0], "data/mark.json");
+    assert.equal(selectorEl.disabled, false);
+  } finally {
+    globalThis.window = originalWindow;
+  }
 });
