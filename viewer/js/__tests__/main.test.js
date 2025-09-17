@@ -295,6 +295,91 @@ test("renderVerses populates the container", () => {
   assert.equal(firstVerse.children[1].textContent, "Ἀρχὴ τοῦ εὐαγγελίου");
 });
 
+test("renderVerses builds a navigation index for chapters and verses", () => {
+  const { doc } = buildDocument();
+  const viewer = createViewer({ document: doc });
+
+  viewer.renderVerses([
+    { reference: "Mark 1:1", text: "Verse one" },
+    { reference: "Mark 1:2", text: "Verse two" },
+    { reference: "Mark 2:1", text: "Verse three" },
+    { reference: "Mark 2:2", text: "Verse four" },
+  ]);
+
+  const indexSnapshot = viewer.getNavigationIndex();
+
+  assert.equal(indexSnapshot.chapters.length, 2);
+  const [chapterOne, chapterTwo] = indexSnapshot.chapters;
+
+  assert.equal(chapterOne.chapter, 1);
+  assert.equal(chapterOne.startIndex, 0);
+  assert.equal(chapterOne.endIndex, 1);
+  assert.equal(chapterOne.startReference, "Mark 1:1");
+  assert.equal(chapterOne.endReference, "Mark 1:2");
+  assert.deepEqual(
+    chapterOne.verses.map((verse) => ({ verse: verse.verse, index: verse.index })),
+    [
+      { verse: 1, index: 0 },
+      { verse: 2, index: 1 },
+    ],
+  );
+
+  assert.equal(chapterTwo.chapter, 2);
+  assert.equal(chapterTwo.startIndex, 2);
+  assert.equal(chapterTwo.endIndex, 3);
+  assert.equal(chapterTwo.startReference, "Mark 2:1");
+  assert.equal(chapterTwo.endReference, "Mark 2:2");
+  assert.deepEqual(
+    chapterTwo.verses.map((verse) => ({ verse: verse.verse, index: verse.index })),
+    [
+      { verse: 1, index: 2 },
+      { verse: 2, index: 3 },
+    ],
+  );
+
+  assert.deepEqual(indexSnapshot.chapterLookup["1"], {
+    chapter: 1,
+    startIndex: 0,
+    endIndex: 1,
+    startReference: "Mark 1:1",
+    endReference: "Mark 1:2",
+  });
+
+  assert.deepEqual(indexSnapshot.chapterLookup["2"], {
+    chapter: 2,
+    startIndex: 2,
+    endIndex: 3,
+    startReference: "Mark 2:1",
+    endReference: "Mark 2:2",
+  });
+
+  assert.deepEqual(indexSnapshot.referenceLookup["Mark 2:2"], {
+    index: 3,
+    chapter: 2,
+    verse: 2,
+  });
+
+  // Mutating the snapshot should not alter the internal state.
+  indexSnapshot.chapters[0].startIndex = 99;
+  const followUpSnapshot = viewer.getNavigationIndex();
+  assert.equal(followUpSnapshot.chapters[0].startIndex, 0);
+});
+
+test("renderVerses resets the navigation index when data is empty", () => {
+  const { doc } = buildDocument();
+  const viewer = createViewer({ document: doc });
+
+  viewer.renderVerses([{ reference: "Mark 1:1", text: "Verse" }]);
+  assert.equal(viewer.getNavigationIndex().chapters.length, 1);
+
+  viewer.renderVerses([]);
+
+  const emptyIndex = viewer.getNavigationIndex();
+  assert.equal(emptyIndex.chapters.length, 0);
+  assert.deepEqual(emptyIndex.chapterLookup, {});
+  assert.deepEqual(emptyIndex.referenceLookup, {});
+});
+
 test("renderVerses exits early when the container is missing", () => {
   const doc = new MockDocument();
   const statusEl = doc.register("viewer-status", new MockElement("div"));

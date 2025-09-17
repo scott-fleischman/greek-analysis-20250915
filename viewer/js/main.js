@@ -14,6 +14,141 @@
     empty: "No verse data available.",
   };
 
+  function createEmptyNavigationIndex() {
+    return {
+      chapters: [],
+      chapterLookup: {},
+      referenceLookup: {},
+    };
+  }
+
+  function cloneNavigationIndex(index) {
+    if (!index || typeof index !== "object") {
+      return createEmptyNavigationIndex();
+    }
+
+    const clonedChapters = Array.isArray(index.chapters)
+      ? index.chapters.map((chapter) => ({
+          chapter: chapter.chapter,
+          startIndex: chapter.startIndex,
+          endIndex: chapter.endIndex,
+          startReference: chapter.startReference,
+          endReference: chapter.endReference,
+          verses: Array.isArray(chapter.verses)
+            ? chapter.verses.map((verse) => ({
+                verse: verse.verse,
+                index: verse.index,
+                reference: verse.reference,
+              }))
+            : [],
+        }))
+      : [];
+
+    const clonedChapterLookup = {};
+    if (index.chapterLookup && typeof index.chapterLookup === "object") {
+      for (const [key, value] of Object.entries(index.chapterLookup)) {
+        clonedChapterLookup[key] = {
+          chapter: value.chapter,
+          startIndex: value.startIndex,
+          endIndex: value.endIndex,
+          startReference: value.startReference,
+          endReference: value.endReference,
+        };
+      }
+    }
+
+    const clonedReferenceLookup = {};
+    if (index.referenceLookup && typeof index.referenceLookup === "object") {
+      for (const [reference, value] of Object.entries(index.referenceLookup)) {
+        clonedReferenceLookup[reference] = {
+          index: value.index,
+          chapter: value.chapter,
+          verse: value.verse,
+        };
+      }
+    }
+
+    return {
+      chapters: clonedChapters,
+      chapterLookup: clonedChapterLookup,
+      referenceLookup: clonedReferenceLookup,
+    };
+  }
+
+  function buildNavigationIndex(verses) {
+    if (!Array.isArray(verses) || verses.length === 0) {
+      return createEmptyNavigationIndex();
+    }
+
+    const navigationIndex = createEmptyNavigationIndex();
+    let currentChapterEntry = null;
+    let currentChapterNumber = null;
+
+    for (let index = 0; index < verses.length; index += 1) {
+      const verse = verses[index];
+      const reference =
+        verse && typeof verse.reference === "string" ? verse.reference.trim() : "";
+
+      if (!reference) {
+        continue;
+      }
+
+      const match = reference.match(/^(?<book>.+?)\s+(?<chapter>\d+):(?<verse>\d+)$/);
+      const chapterNumber = match && match.groups ? Number.parseInt(match.groups.chapter, 10) : NaN;
+      const verseNumber = match && match.groups ? Number.parseInt(match.groups.verse, 10) : NaN;
+
+      if (Number.isNaN(chapterNumber) || Number.isNaN(verseNumber)) {
+        continue;
+      }
+
+      if (currentChapterNumber !== chapterNumber) {
+        currentChapterNumber = chapterNumber;
+        currentChapterEntry = {
+          chapter: chapterNumber,
+          startIndex: index,
+          endIndex: index,
+          startReference: reference,
+          endReference: reference,
+          verses: [],
+        };
+
+        navigationIndex.chapters.push(currentChapterEntry);
+        navigationIndex.chapterLookup[String(chapterNumber)] = {
+          chapter: chapterNumber,
+          startIndex: index,
+          endIndex: index,
+          startReference: reference,
+          endReference: reference,
+        };
+      }
+
+      if (!currentChapterEntry) {
+        continue;
+      }
+
+      currentChapterEntry.endIndex = index;
+      currentChapterEntry.endReference = reference;
+
+      const verseEntry = {
+        verse: verseNumber,
+        index,
+        reference,
+      };
+
+      currentChapterEntry.verses.push(verseEntry);
+      navigationIndex.chapterLookup[String(currentChapterEntry.chapter)].endIndex = index;
+      navigationIndex.chapterLookup[String(currentChapterEntry.chapter)].endReference = reference;
+
+      navigationIndex.referenceLookup[reference] = {
+        index,
+        chapter: chapterNumber,
+        verse: verseNumber,
+      };
+    }
+
+    return navigationIndex;
+  }
+
   function resolveConsole(consoleObj) {
     if (consoleObj && typeof consoleObj.error === "function") {
       return consoleObj;
@@ -63,6 +198,7 @@
       manifestLoaded: false,
       sourcePath: "",
       containerState: "idle",
+      navigationIndex: createEmptyNavigationIndex(),
     };
 
     const statusEl = doc ? doc.getElementById("viewer-status") : null;
@@ -207,6 +343,8 @@
     setStatus("");
 
     function renderVerses(verses) {
+      viewerState.navigationIndex = buildNavigationIndex(verses);
+
       const hasContainer = !!containerEl && !!doc;
 
       if (!Array.isArray(verses) || verses.length === 0) {
@@ -244,6 +382,10 @@
 
       containerEl.appendChild(fragment);
       updateContainerState("ready");
+    }
+
+    function getNavigationIndex() {
+      return cloneNavigationIndex(viewerState.navigationIndex);
     }
 
     async function loadBook(loadOptions = {}) {
@@ -494,6 +636,7 @@
       loadManifest,
       selectBook,
       renderVerses,
+      getNavigationIndex,
       setStatus,
       configure,
       elements: {
