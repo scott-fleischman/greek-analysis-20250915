@@ -149,6 +149,26 @@
     return navigationIndex;
   }
 
+  function parsePositiveInteger(value) {
+    if (typeof value === "number" && Number.isInteger(value) && value > 0) {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return null;
+      }
+
+      const parsed = Number.parseInt(trimmed, 10);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }
+
   function resolveConsole(consoleObj) {
     if (consoleObj && typeof consoleObj.error === "function") {
       return consoleObj;
@@ -199,6 +219,10 @@
       sourcePath: "",
       containerState: "idle",
       navigationIndex: createEmptyNavigationIndex(),
+      activeReference: "",
+      activeBookId: null,
+      activeBookDisplayName: "",
+      referenceControlsEnabled: false,
     };
 
     const statusEl = doc ? doc.getElementById("viewer-status") : null;
@@ -207,7 +231,109 @@
     const headerEl = doc ? doc.getElementById("book-header") : null;
     const selectorEl = doc ? doc.getElementById("book-selector") : null;
     const sourcePathEl = doc ? doc.getElementById("book-source-path") : null;
+    const referenceJumpForm = doc ? doc.getElementById("reference-jump-form") : null;
+    const referenceChapterInput = doc ? doc.getElementById("reference-jump-chapter") : null;
+    const referenceVerseInput = doc ? doc.getElementById("reference-jump-verse") : null;
+    const referenceJumpSubmit = doc ? doc.getElementById("reference-jump-submit") : null;
+    const referenceJumpHintEl = doc ? doc.getElementById("reference-jump-hint") : null;
     const safeConsole = resolveConsole(consoleObj);
+
+    function updateReferenceHint(isEnabled) {
+      if (!referenceJumpHintEl) {
+        return;
+      }
+
+      referenceJumpHintEl.textContent = isEnabled
+        ? "Enter a chapter and verse number to move directly to that passage."
+        : "Jump controls will be enabled after the text loads.";
+    }
+
+    function setReferenceControlsEnabled(nextEnabled) {
+      const resolved = !!nextEnabled;
+      viewerState.referenceControlsEnabled = resolved;
+
+      if (referenceJumpForm) {
+        referenceJumpForm.dataset.state = resolved ? "ready" : "disabled";
+        referenceJumpForm.setAttribute("aria-disabled", resolved ? "false" : "true");
+      }
+
+      if (referenceChapterInput) {
+        referenceChapterInput.disabled = !resolved;
+      }
+
+      if (referenceVerseInput) {
+        referenceVerseInput.disabled = !resolved;
+      }
+
+      if (referenceJumpSubmit) {
+        referenceJumpSubmit.disabled = !resolved;
+      }
+
+      updateReferenceHint(resolved);
+    }
+
+    function resetReferenceInputs() {
+      if (referenceChapterInput) {
+        referenceChapterInput.value = "";
+      }
+      if (referenceVerseInput) {
+        referenceVerseInput.value = "";
+      }
+    }
+
+    function getChapterEntry(chapterNumber) {
+      if (
+        !viewerState.navigationIndex ||
+        !Array.isArray(viewerState.navigationIndex.chapters) ||
+        viewerState.navigationIndex.chapters.length === 0
+      ) {
+        return null;
+      }
+
+      return (
+        viewerState.navigationIndex.chapters.find(
+          (chapter) => chapter && chapter.chapter === chapterNumber,
+        ) || null
+      );
+    }
+
+    function highlightVerse(reference) {
+      if (!containerEl || !reference) {
+        return false;
+      }
+
+      const verseElements = Array.from(containerEl.children || []);
+      let targetElement = null;
+
+      for (const element of verseElements) {
+        if (element && element.dataset && element.dataset.reference === reference) {
+          targetElement = element;
+          break;
+        }
+      }
+
+      if (!targetElement) {
+        return false;
+      }
+
+      for (const element of verseElements) {
+        if (!element || !element.dataset) {
+          continue;
+        }
+
+        if (element === targetElement) {
+          element.dataset.active = "true";
+          if (typeof element.scrollIntoView === "function") {
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        } else {
+          delete element.dataset.active;
+        }
+      }
+
+      viewerState.activeReference = reference;
+      return true;
+    }
 
     function syncContainerMessageAttributes() {
       if (!containerEl) {
@@ -238,6 +364,8 @@
 
     syncContainerMessageAttributes();
     updateContainerState(viewerState.containerState);
+    resetReferenceInputs();
+    setReferenceControlsEnabled(false);
 
     if (selectorEl) {
       selectorEl.disabled = true;
@@ -344,10 +472,15 @@
 
     function renderVerses(verses) {
       viewerState.navigationIndex = buildNavigationIndex(verses);
+      viewerState.activeReference = "";
 
       const hasContainer = !!containerEl && !!doc;
+      const hasVerses = Array.isArray(verses) && verses.length > 0;
 
-      if (!Array.isArray(verses) || verses.length === 0) {
+      resetReferenceInputs();
+      setReferenceControlsEnabled(hasVerses && hasContainer);
+
+      if (!hasVerses) {
         if (hasContainer) {
           containerEl.innerHTML = "";
           updateContainerState("empty");
@@ -386,6 +519,92 @@
 
     function getNavigationIndex() {
       return cloneNavigationIndex(viewerState.navigationIndex);
+    }
+
+    function jumpToReference(target = {}) {
+      const input = target && typeof target === "object" ? target : {};
+
+      let rawChapter = null;
+      if (Object.prototype.hasOwnProperty.call(input, "chapter")) {
+        rawChapter = input.chapter;
+      } else if (Object.prototype.hasOwnProperty.call(input, "chapterNumber")) {
+        rawChapter = input.chapterNumber;
+      }
+      const chapterNumber = parsePositiveInteger(rawChapter);
+
+      if (!chapterNumber) {
+        setStatus("Enter a valid chapter number to jump to a passage.", true);
+        return false;
+      }
+
+      if (
+        !viewerState.navigationIndex ||
+        !Array.isArray(viewerState.navigationIndex.chapters) ||
+        viewerState.navigationIndex.chapters.length === 0
+      ) {
+        setStatus("No text is currently available for navigation.", true);
+        return false;
+      }
+
+      const chapterEntry = getChapterEntry(chapterNumber);
+      if (!chapterEntry) {
+        setStatus(`Chapter ${chapterNumber} is not available in this text.`, true);
+        return false;
+      }
+
+      let rawVerse = null;
+      if (Object.prototype.hasOwnProperty.call(input, "verse")) {
+        rawVerse = input.verse;
+      } else if (Object.prototype.hasOwnProperty.call(input, "verseNumber")) {
+        rawVerse = input.verseNumber;
+      }
+      let resolvedVerseNumber = null;
+
+      if (rawVerse !== null && rawVerse !== undefined && String(rawVerse).trim() !== "") {
+        resolvedVerseNumber = parsePositiveInteger(rawVerse);
+        if (!resolvedVerseNumber) {
+          setStatus(`Enter a valid verse number for chapter ${chapterNumber}.`, true);
+          return false;
+        }
+      }
+
+      let targetVerseEntry = null;
+      if (resolvedVerseNumber === null) {
+        targetVerseEntry =
+          Array.isArray(chapterEntry.verses) && chapterEntry.verses.length > 0
+            ? chapterEntry.verses[0]
+            : null;
+      } else {
+        targetVerseEntry = Array.isArray(chapterEntry.verses)
+          ? chapterEntry.verses.find((entry) => entry && entry.verse === resolvedVerseNumber) || null
+          : null;
+      }
+
+      if (!targetVerseEntry) {
+        const verseSegment =
+          resolvedVerseNumber === null ? "" : `, verse ${resolvedVerseNumber}`;
+        setStatus(`Chapter ${chapterNumber}${verseSegment} is not available in this text.`, true);
+        return false;
+      }
+
+      if (!targetVerseEntry.reference) {
+        return false;
+      }
+
+      const highlighted = highlightVerse(targetVerseEntry.reference);
+      if (!highlighted) {
+        return false;
+      }
+
+      if (referenceChapterInput) {
+        referenceChapterInput.value = String(chapterEntry.chapter);
+      }
+      if (referenceVerseInput) {
+        referenceVerseInput.value = String(targetVerseEntry.verse);
+      }
+
+      setStatus("");
+      return true;
     }
 
     async function loadBook(loadOptions = {}) {
@@ -427,6 +646,16 @@
               ? payload.sourcePath.trim()
               : "";
 
+        const payloadBookId =
+          typeof payload.book_id === "string" && payload.book_id.trim()
+            ? payload.book_id.trim()
+            : typeof payload.bookId === "string" && payload.bookId.trim()
+              ? payload.bookId.trim()
+              : viewerState.selectedBookId;
+
+        viewerState.activeBookId = payloadBookId || viewerState.selectedBookId || null;
+        viewerState.activeBookDisplayName = displayName;
+
         displayEl.textContent = displayName;
         headerEl.textContent = header;
         if (doc) {
@@ -464,6 +693,12 @@
       viewerState.selectedBookId = book.bookId;
       viewerState.dataUrl = book.dataUrl;
       viewerState.sourcePath = book.sourcePath || "";
+      viewerState.activeBookId = book.bookId;
+      viewerState.activeBookDisplayName = book.displayName;
+      viewerState.activeReference = "";
+      viewerState.navigationIndex = createEmptyNavigationIndex();
+      resetReferenceInputs();
+      setReferenceControlsEnabled(false);
 
       if (selectorEl && selectorEl.value !== book.bookId) {
         selectorEl.value = book.bookId;
@@ -572,6 +807,26 @@
         });
       }
 
+      if (referenceJumpForm) {
+        referenceJumpForm.addEventListener("submit", (event) => {
+          if (event && typeof event.preventDefault === "function") {
+            event.preventDefault();
+          }
+
+          if (!viewerState.referenceControlsEnabled) {
+            return;
+          }
+
+          const chapterValue = referenceChapterInput ? referenceChapterInput.value : undefined;
+          const verseValue = referenceVerseInput ? referenceVerseInput.value : undefined;
+          const success = jumpToReference({ chapter: chapterValue, verse: verseValue });
+
+          if (!success && referenceChapterInput && typeof referenceChapterInput.focus === "function") {
+            referenceChapterInput.focus();
+          }
+        });
+      }
+
       const startViewer = async () => {
         updateContainerState("loading");
         setStatus(viewerState.messages.loading);
@@ -636,6 +891,7 @@
       loadManifest,
       selectBook,
       renderVerses,
+      jumpToReference,
       getNavigationIndex,
       setStatus,
       configure,

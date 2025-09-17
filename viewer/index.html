@@ -23,6 +23,53 @@
             <option>Loading available texts…</option>
           </select>
         </div>
+        <div class="reader-navigation" id="reference-navigation">
+          <form
+            id="reference-jump-form"
+            class="reader-navigation__form"
+            aria-label="Jump to a chapter and verse"
+          >
+            <div class="reader-navigation__field">
+              <label class="reader-navigation__label" for="reference-jump-chapter">Chapter</label>
+              <input
+                id="reference-jump-chapter"
+                name="chapter"
+                class="reader-navigation__input"
+                type="number"
+                min="1"
+                inputmode="numeric"
+                pattern="\\d*"
+                autocomplete="off"
+                disabled
+              />
+            </div>
+            <div class="reader-navigation__field">
+              <label class="reader-navigation__label" for="reference-jump-verse">Verse</label>
+              <input
+                id="reference-jump-verse"
+                name="verse"
+                class="reader-navigation__input"
+                type="number"
+                min="1"
+                inputmode="numeric"
+                pattern="\\d*"
+                autocomplete="off"
+                disabled
+              />
+            </div>
+            <button
+              id="reference-jump-submit"
+              class="reader-navigation__button"
+              type="submit"
+              disabled
+            >
+              Go
+            </button>
+          </form>
+          <p class="reader-navigation__hint" id="reference-jump-hint">
+            Jump controls will be enabled after the text loads.
+          </p>
+        </div>
       </div>
     </header>
     <main class="app-shell" aria-live="polite">

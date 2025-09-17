@@ -218,7 +218,7 @@ class MockDocument {
   }
 }
 
-function buildDocument({ includeSelector = true } = {}) {
+function buildDocument({ includeSelector = true, includeReferenceJump = true } = {}) {
   const doc = new MockDocument();
   const statusEl = doc.register("viewer-status", new MockElement("div"));
   const containerEl = doc.register("text-container", new MockElement("section"));
@@ -226,11 +226,43 @@ function buildDocument({ includeSelector = true } = {}) {
   const headerEl = doc.register("book-header", new MockElement("p"));
   const sourcePathEl = doc.register("book-source-path", new MockElement("code"));
   let selectorEl = null;
+  let referenceJumpForm = null;
+  let referenceChapterInput = null;
+  let referenceVerseInput = null;
+  let referenceJumpSubmit = null;
+  let referenceJumpHint = null;
   if (includeSelector) {
     selectorEl = doc.register("book-selector", new MockElement("select"));
     selectorEl.disabled = true;
   }
-  return { doc, statusEl, containerEl, displayEl, headerEl, sourcePathEl, selectorEl };
+  if (includeReferenceJump) {
+    referenceJumpForm = doc.register("reference-jump-form", new MockElement("form"));
+    referenceChapterInput = doc.register("reference-jump-chapter", new MockElement("input"));
+    referenceVerseInput = doc.register("reference-jump-verse", new MockElement("input"));
+    referenceJumpSubmit = doc.register("reference-jump-submit", new MockElement("button"));
+    referenceJumpHint = doc.register("reference-jump-hint", new MockElement("p"));
+
+    referenceJumpForm.appendChild(referenceChapterInput);
+    referenceJumpForm.appendChild(referenceVerseInput);
+    referenceJumpForm.appendChild(referenceJumpSubmit);
+    referenceChapterInput.disabled = true;
+    referenceVerseInput.disabled = true;
+    referenceJumpSubmit.disabled = true;
+  }
+  return {
+    doc,
+    statusEl,
+    containerEl,
+    displayEl,
+    headerEl,
+    sourcePathEl,
+    selectorEl,
+    referenceJumpForm,
+    referenceChapterInput,
+    referenceVerseInput,
+    referenceJumpSubmit,
+    referenceJumpHint,
+  };
 }
 
 async function flushAsyncOperations() {
@@ -378,6 +410,129 @@ test("renderVerses resets the navigation index when data is empty", () => {
   assert.equal(emptyIndex.chapters.length, 0);
   assert.deepEqual(emptyIndex.chapterLookup, {});
   assert.deepEqual(emptyIndex.referenceLookup, {});
+});
+
+test("renderVerses toggles the reference jump controls", () => {
+  const {
+    doc,
+    referenceJumpForm,
+    referenceChapterInput,
+    referenceVerseInput,
+    referenceJumpSubmit,
+    referenceJumpHint,
+  } = buildDocument();
+  const viewer = createViewer({ document: doc });
+
+  assert.equal(referenceJumpForm.getAttribute("aria-disabled"), "true");
+  assert.equal(referenceJumpForm.dataset.state, "disabled");
+  assert.equal(referenceChapterInput.disabled, true);
+  assert.equal(referenceVerseInput.disabled, true);
+  assert.equal(referenceJumpSubmit.disabled, true);
+  assert.equal(referenceJumpHint.textContent, "Jump controls will be enabled after the text loads.");
+
+  viewer.renderVerses([
+    { reference: "Mark 1:1", text: "Verse one" },
+    { reference: "Mark 1:2", text: "Verse two" },
+  ]);
+
+  assert.equal(referenceJumpForm.getAttribute("aria-disabled"), "false");
+  assert.equal(referenceJumpForm.dataset.state, "ready");
+  assert.equal(referenceChapterInput.disabled, false);
+  assert.equal(referenceVerseInput.disabled, false);
+  assert.equal(referenceJumpSubmit.disabled, false);
+  assert.equal(referenceChapterInput.value, "");
+  assert.equal(referenceVerseInput.value, "");
+  assert.equal(
+    referenceJumpHint.textContent,
+    "Enter a chapter and verse number to move directly to that passage.",
+  );
+
+  viewer.renderVerses([]);
+
+  assert.equal(referenceJumpForm.getAttribute("aria-disabled"), "true");
+  assert.equal(referenceJumpForm.dataset.state, "disabled");
+  assert.equal(referenceChapterInput.disabled, true);
+  assert.equal(referenceVerseInput.disabled, true);
+  assert.equal(referenceJumpSubmit.disabled, true);
+  assert.equal(referenceJumpHint.textContent, "Jump controls will be enabled after the text loads.");
+});
+
+test("jumpToReference highlights the requested verse", () => {
+  const {
+    doc,
+    containerEl,
+    referenceChapterInput,
+    referenceVerseInput,
+    statusEl,
+  } = buildDocument();
+  const viewer = createViewer({ document: doc });
+
+  const verses = [
+    { reference: "Mark 1:1", text: "Verse one" },
+    { reference: "Mark 1:2", text: "Verse two" },
+    { reference: "Mark 2:1", text: "Verse three" },
+    { reference: "Mark 2:2", text: "Verse four" },
+  ];
+
+  viewer.renderVerses(verses);
+
+  const success = viewer.jumpToReference({ chapter: 2, verse: 2 });
+  assert.equal(success, true);
+
+  const [verseOne, verseTwo, verseThree, verseFour] = containerEl.children;
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseOne.dataset, "active"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseTwo.dataset, "active"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(verseThree.dataset, "active"));
+  assert.equal(verseFour.dataset.active, "true");
+  assert.equal(referenceChapterInput.value, "2");
+  assert.equal(referenceVerseInput.value, "2");
+  assert.equal(statusEl.textContent, "");
+});
+
+test("jumpToReference reports errors when a reference is unavailable", () => {
+  const { doc, statusEl, containerEl } = buildDocument();
+  const viewer = createViewer({ document: doc });
+
+  viewer.renderVerses([{ reference: "Mark 1:1", text: "Verse one" }]);
+
+  const missingChapterResult = viewer.jumpToReference({ chapter: 2, verse: 1 });
+  assert.equal(missingChapterResult, false);
+  assert.equal(statusEl.textContent, "Chapter 2 is not available in this text.");
+
+  const missingVerseResult = viewer.jumpToReference({ chapter: 1, verse: 5 });
+  assert.equal(missingVerseResult, false);
+  assert.equal(statusEl.textContent, "Chapter 1, verse 5 is not available in this text.");
+
+  const [onlyVerse] = containerEl.children;
+  assert.ok(!Object.prototype.hasOwnProperty.call(onlyVerse.dataset, "active"));
+});
+
+test("reference jump form submits values through the navigation index", async () => {
+  const {
+    doc,
+    containerEl,
+    referenceJumpForm,
+    referenceChapterInput,
+    referenceVerseInput,
+  } = buildDocument({ includeSelector: false });
+  const viewer = createViewer({ document: doc });
+
+  doc.readyState = "loading";
+  viewer.init();
+
+  viewer.renderVerses([
+    { reference: "Mark 1:1", text: "Verse one" },
+    { reference: "Mark 2:1", text: "Verse two" },
+  ]);
+
+  referenceChapterInput.value = "2";
+  referenceVerseInput.value = "1";
+
+  referenceJumpForm.dispatchEvent({ type: "submit" });
+
+  const [firstVerse, secondVerse] = containerEl.children;
+  assert.ok(!Object.prototype.hasOwnProperty.call(firstVerse.dataset, "active"));
+  assert.equal(secondVerse.dataset.active, "true");
 });
 
 test("renderVerses exits early when the container is missing", () => {
