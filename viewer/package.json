@@ -1,0 +1,20 @@
+{
+  "name": "sblgnt-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SBLGNT web viewer",
+  "scripts": {
+    "test": "node ./scripts/run-tests.js"
+  },
+  "keywords": [
+    "sblgnt",
+    "viewer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "config": {
+    "viewerCoverageThreshold": 80,
+    "viewerCoverageTarget": "js/main.js"
+  }
+}

@@ -30,6 +30,15 @@ jobs:
           coverage run -m pytest
           coverage report
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run viewer tests
+        working-directory: viewer
+        run: npm test
+
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: test
