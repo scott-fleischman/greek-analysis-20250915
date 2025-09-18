@@ -22,7 +22,7 @@
 - [x] Capture UX notes on how clause selections surface the applied analyses (tooltips, side panel, etc.).
 
 ## 4. Analysis Browser by Category
-- [ ] Document the analysis categories and context rules, aligned with the clause schema.
+- [x] Document the analysis categories and context rules, aligned with the clause schema. See `docs/analysis-categories.md`.
 - [ ] Shape backend data (counts plus context snippets) required to populate the browser.
 - [ ] Build the category listing panel with counts per text and drill-down affordances.
 - [ ] Link instance views back to the main text with synchronized highlighting to keep context clear.
