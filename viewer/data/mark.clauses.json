@@ -535,10 +535,10 @@
       ],
       "category_tags": [
         "main",
-        "narrative",
-        "speech"
+        "speech",
+        "discourse-group"
       ],
-      "function": "John declares the mightier one is coming.",
+      "function": "John proclaims the arrival of the mightier one.",
       "source": {
         "method": "manual",
         "reviewed_by": [
@@ -550,7 +550,136 @@
         }
       },
       "analysis": {
-        "speaker": "John the Baptist"
+        "speaker": "John the Baptist",
+        "group_type": "indirect-discourse",
+        "group_only": true,
+        "sub_clauses": [
+          {
+            "clause_id": "mark-01-07-b",
+            "role": "introduction",
+            "label": "Speech introduction"
+          },
+          {
+            "clause_id": "mark-01-07-c",
+            "role": "assertion",
+            "label": "Main assertion"
+          },
+          {
+            "clause_id": "mark-01-07-d",
+            "role": "relative",
+            "label": "Relative clause"
+          }
+        ]
+      }
+    },
+    {
+      "clause_id": "mark-01-07-b",
+      "parent_clause_id": "mark-01-07-a",
+      "start": {
+        "reference": "Mark 1:7",
+        "verse_index": 6,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:7",
+        "verse_index": 6,
+        "offset": 20
+      },
+      "references": [
+        "Mark 1:7"
+      ],
+      "category_tags": [
+        "subordinate",
+        "speech",
+        "speech-intro"
+      ],
+      "function": "Introduces the proclamation saying.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "John the Baptist",
+        "role": "introduction"
+      }
+    },
+    {
+      "clause_id": "mark-01-07-c",
+      "parent_clause_id": "mark-01-07-a",
+      "start": {
+        "reference": "Mark 1:7",
+        "verse_index": 6,
+        "offset": 21
+      },
+      "end": {
+        "reference": "Mark 1:7",
+        "verse_index": 6,
+        "offset": 57
+      },
+      "references": [
+        "Mark 1:7"
+      ],
+      "category_tags": [
+        "subordinate",
+        "speech",
+        "speech-main"
+      ],
+      "function": "Declares the stronger one is coming behind him.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "John the Baptist",
+        "role": "assertion"
+      }
+    },
+    {
+      "clause_id": "mark-01-07-d",
+      "parent_clause_id": "mark-01-07-a",
+      "start": {
+        "reference": "Mark 1:7",
+        "verse_index": 6,
+        "offset": 58
+      },
+      "end": {
+        "reference": "Mark 1:7",
+        "verse_index": 6,
+        "offset": 121
+      },
+      "references": [
+        "Mark 1:7"
+      ],
+      "category_tags": [
+        "subordinate",
+        "relative-clause"
+      ],
+      "function": "Explains his unworthiness to untie the sandals.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "role": "relative",
+        "focus": "worthiness comparison"
       }
     },
     {
@@ -666,9 +795,10 @@
       ],
       "category_tags": [
         "main",
-        "speech"
+        "speech",
+        "discourse-group"
       ],
-      "function": "Heavenly voice affirms Jesus as beloved Son.",
+      "function": "Heavenly voice proclaims Jesus' identity and favor.",
       "source": {
         "method": "manual",
         "reviewed_by": [
@@ -680,7 +810,136 @@
         }
       },
       "analysis": {
-        "speaker": "Divine voice"
+        "speaker": "Divine voice",
+        "group_type": "direct-discourse",
+        "group_only": true,
+        "sub_clauses": [
+          {
+            "clause_id": "mark-01-11-b",
+            "role": "introduction",
+            "label": "Voice introduction"
+          },
+          {
+            "clause_id": "mark-01-11-c",
+            "role": "assertion",
+            "label": "Beloved Son declaration"
+          },
+          {
+            "clause_id": "mark-01-11-d",
+            "role": "approval",
+            "label": "Divine approval"
+          }
+        ]
+      }
+    },
+    {
+      "clause_id": "mark-01-11-b",
+      "parent_clause_id": "mark-01-11-a",
+      "start": {
+        "reference": "Mark 1:11",
+        "verse_index": 10,
+        "offset": 0
+      },
+      "end": {
+        "reference": "Mark 1:11",
+        "verse_index": 10,
+        "offset": 32
+      },
+      "references": [
+        "Mark 1:11"
+      ],
+      "category_tags": [
+        "subordinate",
+        "speech",
+        "speech-intro"
+      ],
+      "function": "Narrator introduces the heavenly proclamation.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Divine voice",
+        "role": "introduction"
+      }
+    },
+    {
+      "clause_id": "mark-01-11-c",
+      "parent_clause_id": "mark-01-11-a",
+      "start": {
+        "reference": "Mark 1:11",
+        "verse_index": 10,
+        "offset": 33
+      },
+      "end": {
+        "reference": "Mark 1:11",
+        "verse_index": 10,
+        "offset": 61
+      },
+      "references": [
+        "Mark 1:11"
+      ],
+      "category_tags": [
+        "subordinate",
+        "speech",
+        "speech-main"
+      ],
+      "function": "Voice declares Jesus as the beloved Son.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Divine voice",
+        "role": "assertion"
+      }
+    },
+    {
+      "clause_id": "mark-01-11-d",
+      "parent_clause_id": "mark-01-11-a",
+      "start": {
+        "reference": "Mark 1:11",
+        "verse_index": 10,
+        "offset": 62
+      },
+      "end": {
+        "reference": "Mark 1:11",
+        "verse_index": 10,
+        "offset": 79
+      },
+      "references": [
+        "Mark 1:11"
+      ],
+      "category_tags": [
+        "subordinate",
+        "speech"
+      ],
+      "function": "Voice expresses divine pleasure in Jesus.",
+      "source": {
+        "method": "manual",
+        "reviewed_by": [
+          "analyst.j.scribe"
+        ],
+        "validation": {
+          "alignment": "pass",
+          "schema": "pass"
+        }
+      },
+      "analysis": {
+        "speaker": "Divine voice",
+        "role": "approval"
       }
     },
     {
@@ -1786,10 +2045,15 @@
     }
   ],
   "categories": [
+    "discourse-group",
     "main",
     "miracle",
     "narrative",
     "quotation",
-    "speech"
+    "relative-clause",
+    "speech",
+    "speech-intro",
+    "speech-main",
+    "subordinate"
   ]
 }
