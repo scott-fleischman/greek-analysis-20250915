@@ -20,6 +20,7 @@ class MockElement {
     this.attributes = new Map();
     this.value = "";
     this.disabled = false;
+    this.checked = false;
   }
 
   append(...nodes) {
@@ -36,9 +37,13 @@ class MockElement {
     if (node.isFragment) {
       for (const child of node.children) {
         this.children.push(child);
+        child.parentNode = this;
+        child.parentElement = this;
       }
     } else {
       this.children.push(node);
+      node.parentNode = this;
+      node.parentElement = this;
     }
     return node;
   }
@@ -136,10 +141,11 @@ class MockElement {
       return true;
     }
 
+    const resolvedTarget = event && event.target ? event.target : this;
     const eventObject = {
       ...event,
       type: event.type,
-      target: this,
+      target: resolvedTarget,
       currentTarget: this,
       defaultPrevented: false,
     };
@@ -236,6 +242,18 @@ function buildDocument({ includeSelector = true, includeReferenceJump = true } =
   const displayEl = doc.register("book-display", new MockElement("h1"));
   const headerEl = doc.register("book-header", new MockElement("p"));
   const sourcePathEl = doc.register("book-source-path", new MockElement("code"));
+  const clauseControlsEl = doc.register("clause-controls", new MockElement("section"));
+  clauseControlsEl.hidden = true;
+  const clauseToggleLabel = new MockElement("label");
+  const clauseToggleEl = doc.register("clause-overlay-toggle", new MockElement("input"));
+  clauseToggleEl.checked = true;
+  clauseToggleEl.disabled = true;
+  clauseToggleLabel.appendChild(clauseToggleEl);
+  clauseControlsEl.appendChild(clauseToggleLabel);
+  const clauseStatusEl = doc.register("clause-overlay-status", new MockElement("p"));
+  clauseControlsEl.appendChild(clauseStatusEl);
+  const clauseDetailsEl = doc.register("clause-details", new MockElement("div"));
+  clauseControlsEl.appendChild(clauseDetailsEl);
   let selectorEl = null;
   let referenceJumpForm = null;
   let referenceChapterInput = null;
@@ -273,6 +291,10 @@ function buildDocument({ includeSelector = true, includeReferenceJump = true } =
     displayEl,
     headerEl,
     sourcePathEl,
+    clauseControlsEl,
+    clauseToggleEl,
+    clauseStatusEl,
+    clauseDetailsEl,
     selectorEl,
     referenceJumpForm,
     referenceChapterInput,
@@ -919,7 +941,15 @@ test("loadBook handles a missing fetch implementation", async () => {
 });
 
 test("loadBook fetches clause overlays and renders highlights", async () => {
-  const { doc, containerEl, statusEl } = buildDocument();
+  const {
+    doc,
+    containerEl,
+    statusEl,
+    clauseControlsEl,
+    clauseToggleEl,
+    clauseStatusEl,
+    clauseDetailsEl,
+  } = buildDocument();
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/sample.json") {
       return {
@@ -1003,6 +1033,17 @@ test("loadBook fetches clause overlays and renders highlights", async () => {
   assert.equal(containerEl.getAttribute("aria-busy"), "false");
   assert.equal(containerEl.children.length, 3);
   assert.equal(statusEl.textContent, "");
+  assert.equal(clauseControlsEl.hidden, false);
+  assert.equal(clauseToggleEl.disabled, false);
+  assert.equal(clauseToggleEl.checked, true);
+  assert.equal(
+    clauseStatusEl.textContent,
+    "Select a highlighted clause to view clause details.",
+  );
+  assert.equal(clauseDetailsEl.children.length, 1);
+  const [detailsMessage] = clauseDetailsEl.children;
+  assert.equal(detailsMessage.className, "clause-details__empty");
+  assert.equal(detailsMessage.textContent, "Select a highlighted clause to view its metadata.");
 
   const [verseOne, verseTwo, verseThree] = containerEl.children;
 
@@ -1013,10 +1054,15 @@ test("loadBook fetches clause overlays and renders highlights", async () => {
   assert.equal(verseOneHighlights[0].dataset.clauseTags, undefined);
   assert.equal(verseOneHighlights[0].title, undefined);
   assert.equal(verseOneHighlights[0].textContent, "ab");
+  assert.equal(verseOneHighlights[0].getAttribute("role"), "button");
+  assert.equal(verseOneHighlights[0].getAttribute("tabindex"), "0");
+  assert.equal(verseOneHighlights[0].getAttribute("aria-pressed"), "false");
+  assert.equal(verseOneHighlights[0].getAttribute("aria-label"), "Clause CLAUSE-2");
   assert.equal(verseOneHighlights[1].dataset.clauseId, "CLAUSE-1");
   assert.equal(verseOneHighlights[1].dataset.clauseTags, "emphasis,analysis");
   assert.equal(verseOneHighlights[1].title, "Proclamation");
   assert.equal(verseOneHighlights[1].textContent, "defghij");
+  assert.equal(verseOneHighlights[1].getAttribute("aria-label"), "Proclamation");
 
   assert.equal(verseTwo.dataset.hasClauses, "true");
   const verseTwoHighlights = getHighlightSpans(verseTwo.children[1]);
@@ -1025,6 +1071,8 @@ test("loadBook fetches clause overlays and renders highlights", async () => {
   assert.equal(verseTwoHighlights[0].dataset.clauseTags, "emphasis,analysis");
   assert.equal(verseTwoHighlights[0].title, "Proclamation");
   assert.equal(verseTwoHighlights[0].textContent, "klmnopqrstuv");
+  assert.equal(verseTwoHighlights[0].getAttribute("role"), "button");
+  assert.equal(verseTwoHighlights[0].getAttribute("aria-pressed"), "false");
 
   assert.equal(verseThree.dataset.hasClauses, "true");
   const verseThreeHighlights = getHighlightSpans(verseThree.children[1]);
@@ -1033,10 +1081,218 @@ test("loadBook fetches clause overlays and renders highlights", async () => {
   assert.equal(verseThreeHighlights[0].dataset.clauseTags, "note");
   assert.equal(verseThreeHighlights[0].title, "No Id Clause");
   assert.equal(verseThreeHighlights[0].textContent, "xyz");
+  assert.equal(verseThreeHighlights[0].getAttribute("role"), null);
+  assert.equal(verseThreeHighlights[0].getAttribute("aria-pressed"), null);
+});
+
+test("setClauseOverlayEnabled toggles highlights and updates the panel", async () => {
+  const {
+    doc,
+    containerEl,
+    clauseControlsEl,
+    clauseToggleEl,
+    clauseStatusEl,
+    clauseDetailsEl,
+  } = buildDocument();
+
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/sample.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Clause Sample",
+            header: "Testing clauses",
+            source_path: "data/sample.txt",
+            verses: [
+              { reference: "Mark 1:1", text: "abcdefghij" },
+              { reference: "Mark 1:2", text: "klmnopqrstuv" },
+            ],
+          };
+        },
+      };
+    }
+
+    if (url === "data/sample.clauses.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            verses: [
+              { reference: "Mark 1:1", character_count: 10 },
+              { reference: "Mark 1:2", character_count: 12 },
+            ],
+            clauses: [
+              {
+                clause_id: "CLAUSE-1",
+                function: "Proclamation",
+                references: ["Mark 1:1", "Mark 1:2"],
+                start: { offset: 0 },
+                end: { offset: 22 },
+                category_tags: ["analysis"],
+                source: { method: "manual" },
+              },
+            ],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock });
+
+  await viewer.loadBook({ dataUrl: "data/sample.json", clauseDataUrl: "data/sample.clauses.json" });
+
+  assert.equal(clauseControlsEl.hidden, false);
+  assert.equal(clauseToggleEl.disabled, false);
+
+  let [initialVerse] = containerEl.children;
+  let initialHighlights = getHighlightSpans(initialVerse.children[1]);
+  assert.equal(initialHighlights.length, 1);
+
+  viewer.setClauseOverlayEnabled(false);
+
+  assert.equal(clauseToggleEl.checked, false);
+  assert.equal(
+    clauseStatusEl.textContent,
+    "Clause highlights are hidden. Enable the toggle to inspect clause metadata.",
+  );
+  assert.equal(clauseDetailsEl.children.length, 1);
+  assert.equal(
+    clauseDetailsEl.children[0].textContent,
+    "Enable clause highlights to explore clause metadata.",
+  );
+
+  [initialVerse] = containerEl.children;
+  initialHighlights = getHighlightSpans(initialVerse.children[1]);
+  assert.equal(initialHighlights.length, 0);
+  assert.equal(initialVerse.dataset.hasClauses, undefined);
+
+  viewer.setClauseOverlayEnabled(true);
+
+  assert.equal(clauseToggleEl.checked, true);
+  assert.equal(
+    clauseStatusEl.textContent,
+    "Select a highlighted clause to view clause details.",
+  );
+  const [restoredVerse] = containerEl.children;
+  const restoredHighlights = getHighlightSpans(restoredVerse.children[1]);
+  assert.equal(restoredHighlights.length, 1);
+  assert.equal(restoredVerse.dataset.hasClauses, "true");
+});
+
+test("selecting a clause highlight surfaces metadata", async () => {
+  const {
+    doc,
+    containerEl,
+    clauseStatusEl,
+    clauseDetailsEl,
+  } = buildDocument();
+
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/sample.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Clause Sample",
+            header: "Testing clauses",
+            source_path: "data/sample.txt",
+            verses: [
+              { reference: "Mark 1:1", text: "abcdefghij" },
+              { reference: "Mark 1:2", text: "klmnopqrstuv" },
+            ],
+          };
+        },
+      };
+    }
+
+    if (url === "data/sample.clauses.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            verses: [
+              { reference: "Mark 1:1", character_count: 10 },
+              { reference: "Mark 1:2", character_count: 12 },
+            ],
+            clauses: [
+              {
+                clause_id: "CLAUSE-1",
+                function: "Proclamation",
+                references: ["Mark 1:1", "Mark 1:2"],
+                start: { offset: 0 },
+                end: { offset: 22 },
+                category_tags: ["emphasis", "analysis"],
+                source: { method: "manual", reviewed_by: ["analyst.j.scribe"] },
+              },
+            ],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock });
+
+  await viewer.loadBook({ dataUrl: "data/sample.json", clauseDataUrl: "data/sample.clauses.json" });
+
+  const [firstVerse, secondVerse] = containerEl.children;
+  const firstHighlights = getHighlightSpans(firstVerse.children[1]);
+  const targetHighlight = firstHighlights.find((span) => span.dataset.clauseId === "CLAUSE-1");
+  assert.ok(targetHighlight);
+
+  containerEl.dispatchEvent({ type: "click", target: targetHighlight });
+
+  assert.equal(clauseStatusEl.textContent, "Showing details for clause CLAUSE-1.");
+
+  const refreshedFirstVerse = containerEl.children[0];
+  const refreshedSecondVerse = containerEl.children[1];
+  const refreshedFirstHighlights = getHighlightSpans(refreshedFirstVerse.children[1]);
+  const refreshedSecondHighlights = getHighlightSpans(refreshedSecondVerse.children[1]);
+  const activeFirst = refreshedFirstHighlights.find((span) => span.dataset.clauseId === "CLAUSE-1");
+  const activeSecond = refreshedSecondHighlights.find((span) => span.dataset.clauseId === "CLAUSE-1");
+  assert.equal(activeFirst.dataset.active, "true");
+  assert.equal(activeFirst.getAttribute("aria-pressed"), "true");
+  assert.equal(activeSecond.dataset.active, "true");
+
+  assert.ok(clauseDetailsEl.children.length >= 2);
+  const [functionEl, listEl] = clauseDetailsEl.children;
+  assert.equal(functionEl.className, "clause-details__function");
+  assert.equal(functionEl.textContent, "Proclamation");
+  assert.equal(listEl.tagName, "DL");
+
+  const detailNodes = Array.from(listEl.children);
+  assert.equal(detailNodes[0].textContent, "Clause ID");
+  assert.equal(detailNodes[1].textContent, "CLAUSE-1");
+  assert.equal(detailNodes[2].textContent, "References");
+  assert.equal(detailNodes[3].textContent, "Mark 1:1, Mark 1:2");
+  assert.equal(detailNodes[4].textContent, "Category Tags");
+  const tagsContainer = detailNodes[5];
+  const tags = Array.from(tagsContainer.children).map((node) => node.textContent);
+  assert.deepEqual(tags, ["emphasis", "analysis"]);
+  assert.equal(detailNodes[6].textContent, "Source");
+  assert.equal(detailNodes[7].textContent, "manual · Reviewed by analyst.j.scribe");
 });
 
 test("loadBook logs clause fetch errors and renders without highlights", async () => {
-  const { doc, containerEl, statusEl } = buildDocument();
+  const {
+    doc,
+    containerEl,
+    statusEl,
+    clauseControlsEl,
+    clauseToggleEl,
+    clauseStatusEl,
+    clauseDetailsEl,
+  } = buildDocument();
   const consoleMock = { error: mock.fn() };
   const fetchMock = mock.fn(async (url) => {
     if (url === "data/sample.json") {
@@ -1090,10 +1346,18 @@ test("loadBook logs clause fetch errors and renders without highlights", async (
   assert.equal(statusEl.textContent, "");
   assert.equal(containerEl.dataset.state, "ready");
   assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(clauseControlsEl.hidden, true);
+  assert.equal(clauseToggleEl.disabled, true);
+  assert.equal(
+    clauseStatusEl.textContent,
+    "Clause highlights are not available for this text yet.",
+  );
+  assert.equal(clauseDetailsEl.children.length, 0);
 });
 
 test("loadBook clears clause state for malformed payloads", async () => {
-  const { doc, containerEl } = buildDocument();
+  const { doc, containerEl, clauseControlsEl, clauseToggleEl, clauseStatusEl, clauseDetailsEl } =
+    buildDocument();
   const clauseResponses = [
     {
       ok: true,
@@ -1151,12 +1415,28 @@ test("loadBook clears clause state for malformed payloads", async () => {
   assert.equal(containerEl.children.length, 1);
   let highlights = getHighlightSpans(containerEl.children[0].children[1]);
   assert.equal(highlights.length, 0);
+  assert.equal(clauseControlsEl.hidden, true);
+  assert.equal(clauseToggleEl.disabled, true);
+  assert.equal(clauseToggleEl.checked, true);
+  assert.equal(
+    clauseStatusEl.textContent,
+    "Clause highlights are not available for this text yet.",
+  );
+  assert.equal(clauseDetailsEl.children.length, 0);
 
   await viewer.loadBook({ dataUrl: "data/sample.json", clauseDataUrl: "data/sample.clauses.json" });
 
   assert.equal(containerEl.children.length, 1);
   highlights = getHighlightSpans(containerEl.children[0].children[1]);
   assert.equal(highlights.length, 0);
+  assert.equal(clauseControlsEl.hidden, true);
+  assert.equal(clauseToggleEl.disabled, true);
+  assert.equal(clauseToggleEl.checked, true);
+  assert.equal(
+    clauseStatusEl.textContent,
+    "Clause highlights are not available for this text yet.",
+  );
+  assert.equal(clauseDetailsEl.children.length, 0);
 });
 
 test("loadBook skips invalid clause entries and orders ranges", async () => {
