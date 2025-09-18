@@ -67,6 +67,7 @@ Clauses are stored in the `clauses` array. Each object adheres to the schema bel
 | `references` | `array` of strings | ✅ | Canonical references covered by the clause (e.g., `["Mark 1:1"]` or `["Mark 1:2", "Mark 1:3"]`). |
 | `category_tags` | `array` of strings | ✅ | Normalized tags that classify the clause (e.g., `"main"`, `"subordinate"`, `"quotation"`). Define tag semantics in the analysis-category documentation. |
 | `function` | `string` | ⭕️ | Short description of the clause role (e.g., `"Narrative introduction"`). Optional but helpful for UX surfaces. |
+| `parent_clause_id` | `string` | ⭕️ | Identifier of a broader clause or discourse segment that this clause belongs to. Enables hierarchy modeling for indirect discourse and other nested structures. |
 | `analysis` | `object` | ⭕️ | Arbitrary key-value store for richer annotations (semantic roles, discourse markers, etc.). |
 | `source` | `object` | ✅ | Provenance for this specific clause (data provenance can vary even within the same file). See [Per-clause source metadata](#per-clause-source-metadata). |
 
@@ -97,6 +98,15 @@ Each clause has a `source` object with the following shape:
 | `method` | `string` | `"manual"`, `"llm"`, `"hybrid"`, etc. |
 | `reviewed_by` | `array` of strings | Optional list of human reviewers. |
 | `validation` | `object` | Keyed summary of QA checks (e.g., `{ "alignment": "pass", "schema": "pass" }`). |
+
+### Hierarchical relationships
+
+Clauses that summarise a larger discourse (e.g., an indirect speech frame) can group their dependent clauses using two optional fields:
+
+- **`parent_clause_id`** on a child clause points to its immediate container clause. This enables the UI to surface “parent clause” navigation links.
+- **`analysis.sub_clauses`** on the parent clause lists subordinate clause IDs along with optional `role`/`label` metadata. Each entry is an object like `{ "clause_id": "mark-01-07-b", "role": "introduction", "label": "Speech introduction" }`.
+
+When a clause serves purely as a grouping header, set `analysis.group_only` to `true`. Group-only clauses retain their metadata and relationships but are skipped by the highlight renderer so nested spans do not overlap in the UI. Downstream consumers should still include these clauses in details panels and status summaries.
 
 Storing provenance per clause allows gradual improvement: early chapters may be hand-curated while later chapters rely on LLM segmentation pending review.
 
