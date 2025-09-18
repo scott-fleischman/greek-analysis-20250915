@@ -168,6 +168,13 @@ class MockDocumentFragment {
   }
 }
 
+class MockTextNode {
+  constructor(text) {
+    this.textContent = typeof text === "string" ? text : "";
+    this.children = [];
+  }
+}
+
 class MockDocument {
   constructor() {
     this.elements = new Map();
@@ -191,6 +198,10 @@ class MockDocument {
 
   createDocumentFragment() {
     return new MockDocumentFragment();
+  }
+
+  createTextNode(text) {
+    return new MockTextNode(text);
   }
 
   addEventListener(type, handler) {
@@ -275,6 +286,16 @@ function buildDocument({ includeSelector = true, includeReferenceJump = true } =
 
 async function flushAsyncOperations() {
   await new Promise((resolve) => setImmediate(resolve));
+}
+
+function getHighlightSpans(textElement) {
+  if (!textElement || !Array.isArray(textElement.children)) {
+    return [];
+  }
+
+  return textElement.children.filter(
+    (child) => child instanceof MockElement && child.className === "clause-highlight",
+  );
 }
 
 test("setStatus updates the message panel", () => {
@@ -895,6 +916,363 @@ test("loadBook handles a missing fetch implementation", async () => {
   assert.equal(consoleMock.error.mock.calls.length, 1);
   assert.equal(containerEl.dataset.state, "error");
   assert.equal(containerEl.getAttribute("aria-busy"), "false");
+});
+
+test("loadBook fetches clause overlays and renders highlights", async () => {
+  const { doc, containerEl, statusEl } = buildDocument();
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/sample.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Clause Sample",
+            header: "Testing clauses",
+            source_path: "data/sample.txt",
+            verses: [
+              { reference: "Mark 1:1", text: "abcdefghij" },
+              { reference: "Mark 1:2", text: "klmnopqrstuv" },
+              { reference: "Mark 1:3", text: "wxyzzy" },
+            ],
+          };
+        },
+      };
+    }
+
+    if (url === "data/sample.clauses.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            verses: [
+              { reference: "Mark 1:1", character_count: 10 },
+              { reference: "Mark 1:2", character_count: 12 },
+            ],
+            clauses: [
+              {
+                clause_id: "CLAUSE-1",
+                function: "Proclamation",
+                references: ["Mark 1:1", "Mark 1:2"],
+                start: { offset: 3 },
+                end: { offset: 17 },
+                category_tags: [" emphasis ", "analysis"],
+              },
+              {
+                clause_id: "CLAUSE-2",
+                function: "",
+                references: ["Mark 1:1"],
+                start: { offset: 0 },
+                end: { offset: 2 },
+                category_tags: [],
+              },
+              {
+                clause_id: "   ",
+                function: "No Id Clause",
+                references: ["Mark 1:3"],
+                start: { offset: 1 },
+                end: { offset: 4 },
+                category_tags: ["  note  ", ""],
+              },
+            ],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock });
+
+  const payload = await viewer.loadBook({
+    dataUrl: "data/sample.json",
+    clauseDataUrl: "data/sample.clauses.json",
+  });
+
+  assert.ok(payload);
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.deepEqual(fetchMock.mock.calls[0].arguments, ["data/sample.json", { cache: "no-cache" }]);
+  assert.deepEqual(fetchMock.mock.calls[1].arguments, [
+    "data/sample.clauses.json",
+    { cache: "no-cache" },
+  ]);
+
+  assert.equal(containerEl.dataset.state, "ready");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+  assert.equal(containerEl.children.length, 3);
+  assert.equal(statusEl.textContent, "");
+
+  const [verseOne, verseTwo, verseThree] = containerEl.children;
+
+  assert.equal(verseOne.dataset.hasClauses, "true");
+  const verseOneHighlights = getHighlightSpans(verseOne.children[1]);
+  assert.equal(verseOneHighlights.length, 2);
+  assert.equal(verseOneHighlights[0].dataset.clauseId, "CLAUSE-2");
+  assert.equal(verseOneHighlights[0].dataset.clauseTags, undefined);
+  assert.equal(verseOneHighlights[0].title, undefined);
+  assert.equal(verseOneHighlights[0].textContent, "ab");
+  assert.equal(verseOneHighlights[1].dataset.clauseId, "CLAUSE-1");
+  assert.equal(verseOneHighlights[1].dataset.clauseTags, "emphasis,analysis");
+  assert.equal(verseOneHighlights[1].title, "Proclamation");
+  assert.equal(verseOneHighlights[1].textContent, "defghij");
+
+  assert.equal(verseTwo.dataset.hasClauses, "true");
+  const verseTwoHighlights = getHighlightSpans(verseTwo.children[1]);
+  assert.equal(verseTwoHighlights.length, 1);
+  assert.equal(verseTwoHighlights[0].dataset.clauseId, "CLAUSE-1");
+  assert.equal(verseTwoHighlights[0].dataset.clauseTags, "emphasis,analysis");
+  assert.equal(verseTwoHighlights[0].title, "Proclamation");
+  assert.equal(verseTwoHighlights[0].textContent, "klmnopqrstuv");
+
+  assert.equal(verseThree.dataset.hasClauses, "true");
+  const verseThreeHighlights = getHighlightSpans(verseThree.children[1]);
+  assert.equal(verseThreeHighlights.length, 1);
+  assert.equal(verseThreeHighlights[0].dataset.clauseId, undefined);
+  assert.equal(verseThreeHighlights[0].dataset.clauseTags, "note");
+  assert.equal(verseThreeHighlights[0].title, "No Id Clause");
+  assert.equal(verseThreeHighlights[0].textContent, "xyz");
+});
+
+test("loadBook logs clause fetch errors and renders without highlights", async () => {
+  const { doc, containerEl, statusEl } = buildDocument();
+  const consoleMock = { error: mock.fn() };
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/sample.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Clause Sample",
+            header: "Testing clauses",
+            source_path: "data/sample.txt",
+            verses: [{ reference: "Mark 1:1", text: "Simple verse" }],
+          };
+        },
+      };
+    }
+
+    if (url === "data/sample.clauses.json") {
+      return {
+        ok: false,
+        status: 503,
+        async json() {
+          return {};
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock, console: consoleMock });
+
+  const result = await viewer.loadBook({
+    dataUrl: "data/sample.json",
+    clauseDataUrl: "data/sample.clauses.json",
+  });
+
+  assert.ok(result);
+  assert.equal(fetchMock.mock.calls.length, 2);
+  assert.deepEqual(fetchMock.mock.calls[1].arguments, [
+    "data/sample.clauses.json",
+    { cache: "no-cache" },
+  ]);
+  assert.equal(consoleMock.error.mock.calls.length, 1);
+
+  const [verseOne] = containerEl.children;
+  assert.equal(verseOne.dataset.hasClauses, undefined);
+  const highlights = getHighlightSpans(verseOne.children[1]);
+  assert.equal(highlights.length, 0);
+  assert.equal(verseOne.children[1].textContent, "Simple verse");
+  assert.equal(statusEl.textContent, "");
+  assert.equal(containerEl.dataset.state, "ready");
+  assert.equal(containerEl.getAttribute("aria-busy"), "false");
+});
+
+test("loadBook clears clause state for malformed payloads", async () => {
+  const { doc, containerEl } = buildDocument();
+  const clauseResponses = [
+    {
+      ok: true,
+      status: 200,
+      async json() {
+        return "bad payload";
+      },
+    },
+    {
+      ok: true,
+      status: 200,
+      async json() {
+        return {
+          verses: [
+            null,
+            { reference: "   ", character_count: 7 },
+            { reference: "Mark 1:1", character_count: 5 },
+          ],
+          clauses: null,
+        };
+      },
+    },
+  ];
+
+  let clauseIndex = 0;
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/sample.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Clause Sample",
+            header: "Testing clauses",
+            source_path: "data/sample.txt",
+            verses: [{ reference: "Mark 1:1", text: "Alpha" }],
+          };
+        },
+      };
+    }
+
+    if (url === "data/sample.clauses.json") {
+      const response = clauseResponses[clauseIndex] || clauseResponses[clauseResponses.length - 1];
+      clauseIndex += 1;
+      return response;
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock });
+
+  await viewer.loadBook({ dataUrl: "data/sample.json", clauseDataUrl: "data/sample.clauses.json" });
+
+  assert.equal(containerEl.children.length, 1);
+  let highlights = getHighlightSpans(containerEl.children[0].children[1]);
+  assert.equal(highlights.length, 0);
+
+  await viewer.loadBook({ dataUrl: "data/sample.json", clauseDataUrl: "data/sample.clauses.json" });
+
+  assert.equal(containerEl.children.length, 1);
+  highlights = getHighlightSpans(containerEl.children[0].children[1]);
+  assert.equal(highlights.length, 0);
+});
+
+test("loadBook skips invalid clause entries and orders ranges", async () => {
+  const { doc, containerEl } = buildDocument();
+  const fetchMock = mock.fn(async (url) => {
+    if (url === "data/sample.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            display_name: "Clause Sample",
+            header: "Testing clauses",
+            source_path: "data/sample.txt",
+            verses: [
+              { reference: "Mark 1:1", text: "ABCDEFGHIJ" },
+              { reference: "Mark 1:2", text: "KLMNO" },
+              { reference: "Mark 1:3", text: "PQRSTU" },
+            ],
+          };
+        },
+      };
+    }
+
+    if (url === "data/sample.clauses.json") {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            verses: [
+              null,
+              { reference: "   ", character_count: 12 },
+              { reference: "Mark 1:1", character_count: "ten" },
+              { reference: "Mark 1:2", character_count: 5 },
+            ],
+            clauses: [
+              null,
+              {
+                clause_id: "SKIP",
+                references: "Mark 1:1",
+                start: { offset: 0 },
+                end: { offset: 3 },
+              },
+              {
+                clause_id: "MULTI",
+                function: "Mixed clause",
+                references: [" Mark 1:1 ", null, "Mark 1:2", "Mark 1:3"],
+                start: { offset: -2 },
+                end: { offset: 9 },
+                category_tags: ["", " key "],
+              },
+              {
+                clause_id: "",
+                function: "",
+                references: ["Mark 1:2"],
+                start: { offset: 1 },
+                end: { offset: 3 },
+                category_tags: "ignored",
+              },
+              {
+                clause_id: "TIE-ONE",
+                function: "Tie start", 
+                references: ["Mark 1:1"],
+                start: { offset: 0 },
+                end: { offset: 4 },
+              },
+              {
+                clause_id: "TIE-TWO",
+                function: "Tie start diff end",
+                references: ["Mark 1:1"],
+                start: { offset: 0 },
+                end: { offset: 5 },
+              },
+              {
+                clause_id: "TIE-THREE",
+                function: "Tie start same end",
+                references: ["Mark 1:1"],
+                start: { offset: 0 },
+                end: { offset: 5 },
+              },
+            ],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  });
+
+  const viewer = createViewer({ document: doc, fetch: fetchMock });
+
+  await viewer.loadBook({ dataUrl: "data/sample.json", clauseDataUrl: "data/sample.clauses.json" });
+
+  const [verseOne, verseTwo, verseThree] = containerEl.children;
+
+  const verseOneHighlights = getHighlightSpans(verseOne.children[1]);
+  assert.equal(verseOneHighlights.length, 4);
+  assert.deepEqual(
+    verseOneHighlights.map((span) => span.dataset.clauseId || ""),
+    ["TIE-ONE", "TIE-THREE", "TIE-TWO", "MULTI"],
+  );
+  const multiHighlight = verseOneHighlights.find((span) => span.dataset.clauseId === "MULTI");
+  assert.ok(multiHighlight);
+  assert.equal(multiHighlight.dataset.clauseTags, "key");
+  assert.equal(multiHighlight.title, "Mixed clause");
+
+  const verseTwoHighlights = getHighlightSpans(verseTwo.children[1]);
+  assert.equal(verseTwoHighlights.length, 2);
+  assert.equal(verseTwoHighlights[0].dataset.clauseId, "MULTI");
+  assert.equal(verseTwoHighlights[1].dataset.clauseId, undefined);
+  assert.equal(verseTwoHighlights[1].dataset.clauseTags, undefined);
+
+  const verseThreeHighlights = getHighlightSpans(verseThree.children[1]);
+  assert.equal(verseThreeHighlights.length, 1);
+  assert.equal(verseThreeHighlights[0].dataset.clauseId, "MULTI");
 });
 
 test("init returns false when required elements are missing", () => {
