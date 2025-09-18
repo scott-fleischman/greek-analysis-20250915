@@ -19,7 +19,7 @@
 - [x] Produce and validate a small clause sample (e.g., Mark 1) that conforms to the schema. See `viewer/data/mark.clauses.json` and accompanying tests in `tests/test_mark_clauses.py`.
 - [x] Render static clause highlights in the viewer using the sample data to confirm styling.
 - [x] Add toggleable overlays and metadata displays (tooltips or panel) for clause interactions.
-- [ ] Capture UX notes on how clause selections surface the applied analyses (tooltips, side panel, etc.).
+- [x] Capture UX notes on how clause selections surface the applied analyses (tooltips, side panel, etc.).
 
 ## 4. Analysis Browser by Category
 - [ ] Document the analysis categories and context rules, aligned with the clause schema.
