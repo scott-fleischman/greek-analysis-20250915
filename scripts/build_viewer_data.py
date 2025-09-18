@@ -115,16 +115,25 @@ def update_manifest(manifest_path: Path, payload_path: Path, payload: dict[str, 
         new_entry["source_path"] = payload.get("source_path")
 
     filtered_books = []
+    merged_entry: dict[str, Any] = {}
     for entry in books:
         if not isinstance(entry, dict):
             continue
-        if (
+
+        matches_existing = (
             entry.get("book_id") == new_entry.get("book_id")
             or entry.get("data_path") == new_entry.get("data_path")
             or entry.get("data_url") == new_entry.get("data_url")
-        ):
+        )
+
+        if matches_existing:
+            merged_entry.update(entry)
             continue
+
         filtered_books.append(entry)
+
+    merged_entry.update(new_entry)
+    new_entry = merged_entry
 
     filtered_books.append(new_entry)
     filtered_books.sort(key=_manifest_sort_key)
