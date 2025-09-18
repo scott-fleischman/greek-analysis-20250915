@@ -206,6 +206,7 @@ def test_main_filters_plain_text(fake_corpus, capsys):
     captured = capsys.readouterr()
     assert "Mark 1:2" in captured.out
     assert "Καθὼς γέγραπται" in captured.out
+    assert "KATA MARKON" not in captured.out
     assert exit_code == 0
 
 
@@ -259,3 +260,22 @@ def test_main_instructs_when_corpus_missing(monkeypatch, tmp_path):
     message = str(exc.value)
     assert "SBLGNT text corpus not found" in message
     assert "git submodule update --init --recursive" in message
+
+
+def test_resolve_source_paths_requires_populated_directory(tmp_path, monkeypatch):
+    empty_dir = tmp_path / "text"
+    empty_dir.mkdir()
+    monkeypatch.setattr(inspect, "TEXT_DIR", empty_dir)
+
+    with pytest.raises(SystemExit) as exc:
+        inspect._resolve_source_paths("text")
+
+    assert "does not contain any .txt files" in str(exc.value)
+
+    xml_dir = tmp_path / "xml"
+    monkeypatch.setattr(inspect, "XML_DIR", xml_dir)
+
+    with pytest.raises(SystemExit) as exc:
+        inspect._resolve_source_paths("xml")
+
+    assert "not found" in str(exc.value)

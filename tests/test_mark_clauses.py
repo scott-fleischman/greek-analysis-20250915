@@ -97,13 +97,47 @@ def test_category_registry_consistency(clause_payload: dict) -> None:
 
     for clause in clause_payload["clauses"]:
         tags = clause["category_tags"]
-        assert tags[0] == "main"
+        assert tags, "Expected clause to declare category tags"
+        if "main" in tags:
+            assert tags[0] == "main"
+        if "subordinate" in tags:
+            assert tags[0] == "subordinate"
         if "speech" in tags:
             analysis = clause.get("analysis")
             assert analysis and analysis.get("speaker")
         if "quotation" in tags:
             analysis = clause.get("analysis")
             assert analysis and analysis.get("source")
+
+
+def test_mark_01_07_discourse_hierarchy(clause_payload: dict) -> None:
+    clause_map = {clause["clause_id"]: clause for clause in clause_payload["clauses"]}
+
+    parent = clause_map["mark-01-07-a"]
+    assert parent["analysis"]["group_only"] is True
+    sub_clause_ids = {
+        entry["clause_id"] for entry in parent["analysis"]["sub_clauses"]
+    }
+    assert sub_clause_ids == {"mark-01-07-b", "mark-01-07-c", "mark-01-07-d"}
+
+    children = [clause_map[child_id] for child_id in sorted(sub_clause_ids)]
+    for child in children:
+        assert child["parent_clause_id"] == "mark-01-07-a"
+        assert child["category_tags"][0] == "subordinate"
+
+    b_clause = clause_map["mark-01-07-b"]
+    c_clause = clause_map["mark-01-07-c"]
+    d_clause = clause_map["mark-01-07-d"]
+
+    assert (b_clause["start"]["offset"], b_clause["end"]["offset"]) == (0, 20)
+    assert (c_clause["start"]["offset"], c_clause["end"]["offset"]) == (21, 57)
+    assert (d_clause["start"]["offset"], d_clause["end"]["offset"]) == (58, 121)
+    assert b_clause["end"]["offset"] <= c_clause["start"]["offset"]
+    assert c_clause["end"]["offset"] <= d_clause["start"]["offset"]
+    assert d_clause["end"]["offset"] == parent["end"]["offset"]
+
+    assert b_clause["analysis"]["speaker"] == "John the Baptist"
+    assert c_clause["analysis"]["speaker"] == "John the Baptist"
 
 
 def test_clause_payload_references(mark_payload: dict, clause_payload: dict) -> None:

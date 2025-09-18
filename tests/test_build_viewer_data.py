@@ -13,6 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from scripts import build_viewer_data as build_module
 from scripts.build_viewer_data import build_payload, parse_verses, update_manifest
 
 
@@ -255,3 +256,55 @@ def test_update_manifest_handles_non_list_books_and_external_payload(tmp_path: P
     assert entry["book_id"] == "mark"
     assert entry["data_path"] == "mark.json"
     assert entry["data_url"] == "data/mark.json"
+
+
+def test_parse_verses_trims_whitespace() -> None:
+    header, verses = parse_verses(
+        [
+            "  Heading with space  ",
+            "",
+            "Mark 1:1  In the beginning  ",
+            "  continuation with extra spaces  ",
+            "Mark 1:2 Second line",
+            "  trailing   ",
+        ]
+    )
+
+    assert header == "Heading with space"
+    assert verses[0]["text"] == "In the beginning continuation with extra spaces"
+    assert verses[1]["text"] == "Second line trailing"
+
+
+def test_manifest_sort_key_casefolds_display_names() -> None:
+    entries = [
+        {"display_name": "john", "book_id": "john"},
+        {"display_name": "Acts", "book_id": "acts"},
+        {"display_name": "1 Corinthians", "book_id": "1cor"},
+    ]
+
+    sorted_entries = sorted(entries, key=build_module._manifest_sort_key)
+    assert [entry["display_name"] for entry in sorted_entries] == [
+        "1 Corinthians",
+        "Acts",
+        "john",
+    ]
+
+
+def test_update_manifest_includes_parent_directory_in_url(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "payloads"
+    manifest_dir.mkdir()
+    manifest_path = manifest_dir / "manifest.json"
+
+    payload_path = manifest_dir / "nested" / "mark.json"
+    payload_path.parent.mkdir()
+    payload = {
+        "book_id": "mark",
+        "display_name": "Mark",
+    }
+
+    update_manifest(manifest_path, payload_path, payload)
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    entry = manifest["books"][0]
+    assert entry["data_path"] == "nested/mark.json"
+    assert entry["data_url"] == f"{manifest_dir.name}/nested/mark.json"
