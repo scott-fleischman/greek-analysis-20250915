@@ -99,6 +99,21 @@
         <p class="notice">Enable JavaScript to load the Gospel of Mark text.</p>
       </noscript>
       <div id="viewer-status" class="notice" role="status" aria-live="assertive"></div>
+      <section
+        id="clause-controls"
+        class="clause-panel"
+        aria-live="polite"
+        hidden
+      >
+        <div class="clause-panel__controls">
+          <label class="clause-panel__toggle" for="clause-overlay-toggle">
+            <input type="checkbox" id="clause-overlay-toggle" checked />
+            <span class="clause-panel__toggle-label">Show clause highlights</span>
+          </label>
+          <p id="clause-overlay-status" class="clause-panel__status"></p>
+        </div>
+        <div id="clause-details" class="clause-panel__details" role="note"></div>
+      </section>
       <section id="text-container" class="verse-list" aria-label="SBLGNT text"></section>
     </main>
     <footer class="app-footer">

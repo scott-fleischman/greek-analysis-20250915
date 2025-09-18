@@ -18,7 +18,7 @@
 - [x] Draft a clause schema document (IDs, boundaries, category tags) that future agents can reference.
 - [x] Produce and validate a small clause sample (e.g., Mark 1) that conforms to the schema. See `viewer/data/mark.clauses.json` and accompanying tests in `tests/test_mark_clauses.py`.
 - [x] Render static clause highlights in the viewer using the sample data to confirm styling.
-- [ ] Add toggleable overlays and metadata displays (tooltips or panel) for clause interactions.
+- [x] Add toggleable overlays and metadata displays (tooltips or panel) for clause interactions.
 - [ ] Capture UX notes on how clause selections surface the applied analyses (tooltips, side panel, etc.).
 
 ## 4. Analysis Browser by Category
