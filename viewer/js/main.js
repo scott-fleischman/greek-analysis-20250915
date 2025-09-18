@@ -253,6 +253,7 @@
       activeBookId: null,
       activeBookDisplayName: "",
       referenceControlsEnabled: false,
+      clausePanelCollapsed: false,
     };
 
     const statusEl = doc ? doc.getElementById("viewer-status") : null;
@@ -272,6 +273,9 @@
     const clauseToggleEl = doc ? doc.getElementById("clause-overlay-toggle") : null;
     const clauseStatusEl = doc ? doc.getElementById("clause-overlay-status") : null;
     const clauseDetailsEl = doc ? doc.getElementById("clause-details") : null;
+    const clauseSummaryPrimaryEl = doc ? doc.getElementById("clause-summary-primary") : null;
+    const clauseSummaryFunctionEl = doc ? doc.getElementById("clause-summary-function") : null;
+    const clauseCollapseButton = doc ? doc.getElementById("clause-panel-collapse") : null;
     const safeConsole = resolveConsole(consoleObj);
 
     function updateReferenceHint(isEnabled) {
@@ -538,7 +542,33 @@
     }
 
     setStatus("");
+    setClausePanelCollapsed(false);
     clearClauseState();
+
+    function setClausePanelCollapsed(nextCollapsed) {
+      const collapsed = !!nextCollapsed;
+      viewerState.clausePanelCollapsed = collapsed;
+
+      if (clauseControlsEl) {
+        clauseControlsEl.dataset.collapsed = collapsed ? "true" : "false";
+        if (collapsed) {
+          clauseControlsEl.classList.add("clause-panel--collapsed");
+        } else {
+          clauseControlsEl.classList.remove("clause-panel--collapsed");
+        }
+      }
+
+      if (clauseCollapseButton) {
+        clauseCollapseButton.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        clauseCollapseButton.textContent = collapsed
+          ? "Expand clause header"
+          : "Collapse clause header";
+      }
+    }
+
+    function toggleClausePanelCollapsed() {
+      setClausePanelCollapsed(!viewerState.clausePanelCollapsed);
+    }
 
     function clearClauseState() {
       viewerState.clausePayload = null;
@@ -546,6 +576,9 @@
       viewerState.clauseDetails = new Map();
       viewerState.clausesAvailable = false;
       viewerState.activeClauseId = "";
+      if (viewerState.clausePanelCollapsed) {
+        setClausePanelCollapsed(false);
+      }
       syncClauseControlsVisibility();
       renderClauseDetails("");
       updateClauseStatusMessage();
@@ -590,7 +623,75 @@
       }
     }
 
+    function updateClauseSummary(targetClauseId) {
+      if (!clauseSummaryPrimaryEl || !clauseSummaryFunctionEl) {
+        return;
+      }
+
+      const normalizedId = typeof targetClauseId === "string" ? targetClauseId.trim() : "";
+      const bookName = viewerState.activeBookDisplayName || "";
+      const primarySegments = [];
+
+      if (bookName) {
+        primarySegments.push(bookName);
+      }
+
+      let clauseDetail = null;
+      if (normalizedId && viewerState.clauseDetails instanceof Map) {
+        clauseDetail = viewerState.clauseDetails.get(normalizedId) || null;
+      }
+
+      const references = clauseDetail && Array.isArray(clauseDetail.references)
+        ? clauseDetail.references
+        : [];
+      const referenceText =
+        references.length > 0
+          ? references[0]
+          : viewerState.activeReference && viewerState.activeReference.trim()
+            ? viewerState.activeReference.trim()
+            : "";
+
+      if (referenceText) {
+        primarySegments.push(referenceText);
+      }
+
+      if (normalizedId) {
+        primarySegments.push(`Clause ${normalizedId}`);
+      }
+
+      clauseSummaryPrimaryEl.textContent =
+        primarySegments.length > 0 ? primarySegments.join(" · ") : "Clause overview";
+
+      if (!viewerState.clausesAvailable) {
+        clauseSummaryFunctionEl.textContent =
+          "Clause highlights are not available for this text yet.";
+        return;
+      }
+
+      if (!viewerState.clauseOverlayEnabled) {
+        clauseSummaryFunctionEl.textContent =
+          "Clause highlights are hidden. Enable the toggle to inspect clause metadata.";
+        return;
+      }
+
+      if (!normalizedId || !clauseDetail) {
+        clauseSummaryFunctionEl.textContent =
+          "Select a highlighted clause to view its metadata.";
+        return;
+      }
+
+      if (clauseDetail.functionText) {
+        clauseSummaryFunctionEl.textContent = clauseDetail.functionText;
+      } else if (references.length > 0) {
+        clauseSummaryFunctionEl.textContent = `${normalizedId} · ${references.join(", ")}`;
+      } else {
+        clauseSummaryFunctionEl.textContent = `Clause ${normalizedId}`;
+      }
+    }
+
     function renderClauseDetails(targetClauseId) {
+      updateClauseSummary(targetClauseId);
+
       if (!clauseDetailsEl) {
         return;
       }
@@ -629,12 +730,14 @@
       }
 
       const fragment = doc.createDocumentFragment();
+      let hasContent = false;
 
       if (clauseDetail.functionText) {
         const functionEl = doc.createElement("p");
         functionEl.className = "clause-details__function";
         functionEl.textContent = clauseDetail.functionText;
         fragment.appendChild(functionEl);
+        hasContent = true;
       }
 
       const listEl = doc.createElement("dl");
@@ -678,9 +781,76 @@
 
       if (listEl.children.length > 0) {
         fragment.appendChild(listEl);
+        hasContent = true;
       }
 
-      if (!clauseDetail.functionText && listEl.children.length === 0) {
+      if (clauseDetail.parentClauseId) {
+        const parentContainer = doc.createElement("div");
+        parentContainer.className = "clause-detail__relations";
+
+        const parentHeading = doc.createElement("p");
+        parentHeading.className = "clause-detail__relations-heading";
+        parentHeading.textContent = "Parent clause";
+        parentContainer.appendChild(parentHeading);
+
+        const parentButton = doc.createElement("button");
+        parentButton.type = "button";
+        parentButton.className = "clause-detail__link";
+        parentButton.dataset.clauseTarget = clauseDetail.parentClauseId;
+        parentButton.textContent =
+          clauseDetail.parentSummary && clauseDetail.parentSummary.trim()
+            ? `${clauseDetail.parentClauseId} · ${clauseDetail.parentSummary.trim()}`
+            : clauseDetail.parentClauseId;
+        parentContainer.appendChild(parentButton);
+
+        fragment.appendChild(parentContainer);
+        hasContent = true;
+      }
+
+      if (Array.isArray(clauseDetail.childClauses) && clauseDetail.childClauses.length > 0) {
+        const childrenContainer = doc.createElement("div");
+        childrenContainer.className = "clause-detail__relations";
+
+        const childHeading = doc.createElement("p");
+        childHeading.className = "clause-detail__relations-heading";
+        childHeading.textContent = "Sub-clauses";
+        childrenContainer.appendChild(childHeading);
+
+        const childList = doc.createElement("ul");
+        childList.className = "clause-detail__relation-list";
+
+        for (const child of clauseDetail.childClauses) {
+          if (!child || !child.clauseId) {
+            continue;
+          }
+
+          const item = doc.createElement("li");
+
+          const childButton = doc.createElement("button");
+          childButton.type = "button";
+          childButton.className = "clause-detail__link";
+          childButton.dataset.clauseTarget = child.clauseId;
+
+          const labelParts = [child.clauseId];
+          if (child.label && child.label.trim()) {
+            labelParts.push(child.label.trim());
+          } else if (child.role && child.role.trim()) {
+            labelParts.push(child.role.trim());
+          }
+
+          childButton.textContent = labelParts.join(" · ");
+          item.appendChild(childButton);
+          childList.appendChild(item);
+        }
+
+        if (childList.children.length > 0) {
+          childrenContainer.appendChild(childList);
+          fragment.appendChild(childrenContainer);
+          hasContent = true;
+        }
+      }
+
+      if (!hasContent) {
         const message = doc.createElement("p");
         message.className = "clause-details__empty";
         message.textContent = "Clause metadata is not available for this selection.";
@@ -751,6 +921,48 @@
         node = node.parentElement || node.parentNode || null;
       }
       return null;
+    }
+
+    function findClauseDetailTarget(startNode) {
+      let node = startNode;
+      while (node && node !== clauseDetailsEl) {
+        if (node.dataset && typeof node.dataset.clauseTarget === "string" && node.dataset.clauseTarget) {
+          return node;
+        }
+        node = node.parentElement || node.parentNode || null;
+      }
+      return null;
+    }
+
+    function handleClauseDetailsClick(event) {
+      if (!clauseDetailsEl) {
+        return;
+      }
+
+      const targetNode = findClauseDetailTarget(event ? event.target : null);
+      if (!targetNode || !targetNode.dataset) {
+        return;
+      }
+
+      const clauseId = typeof targetNode.dataset.clauseTarget === "string"
+        ? targetNode.dataset.clauseTarget.trim()
+        : "";
+      if (!clauseId) {
+        return;
+      }
+
+      if (event && typeof event.preventDefault === "function") {
+        event.preventDefault();
+      }
+
+      setActiveClauseId(clauseId);
+      renderClauseDetails(clauseId);
+      updateClauseStatusMessage();
+
+      const clauseDetail = viewerState.clauseDetails.get(clauseId);
+      if (clauseDetail && Array.isArray(clauseDetail.references) && clauseDetail.references.length > 0) {
+        highlightVerse(clauseDetail.references[0]);
+      }
     }
 
     function handleClauseHighlightSelection(event) {
@@ -828,9 +1040,22 @@
       });
     }
 
+    if (clauseCollapseButton) {
+      clauseCollapseButton.addEventListener("click", (event) => {
+        if (event && typeof event.preventDefault === "function") {
+          event.preventDefault();
+        }
+        toggleClausePanelCollapsed();
+      });
+    }
+
     if (containerEl) {
       containerEl.addEventListener("click", handleClauseHighlightClick);
       containerEl.addEventListener("keydown", handleClauseHighlightKeydown);
+    }
+
+    if (clauseDetailsEl) {
+      clauseDetailsEl.addEventListener("click", handleClauseDetailsClick);
     }
 
     function buildClauseLookup(clausePayload) {
@@ -875,6 +1100,9 @@
           continue;
         }
 
+        const analysis = clause.analysis && typeof clause.analysis === "object" ? clause.analysis : null;
+        const isGroupOnly = !!(analysis && analysis.group_only === true);
+
         const clauseId =
           typeof clause.clause_id === "string" && clause.clause_id.trim() ? clause.clause_id.trim() : "";
         const clauseFunction =
@@ -887,6 +1115,10 @@
           : [];
 
         if (references.length === 0) {
+          continue;
+        }
+
+        if (isGroupOnly) {
           continue;
         }
 
@@ -973,6 +1205,19 @@
         return details;
       }
 
+      const childrenAccumulator = new Map();
+
+      function ensureChildRecord(parentId, childId) {
+        if (!childrenAccumulator.has(parentId)) {
+          childrenAccumulator.set(parentId, new Map());
+        }
+        const parentMap = childrenAccumulator.get(parentId);
+        if (!parentMap.has(childId)) {
+          parentMap.set(childId, { clauseId: childId, label: "", role: "" });
+        }
+        return parentMap.get(childId);
+      }
+
       for (const clause of clausePayload.clauses) {
         if (!clause || typeof clause !== "object") {
           continue;
@@ -1024,13 +1269,89 @@
           }
         }
 
+        const analysis = clause.analysis && typeof clause.analysis === "object" ? clause.analysis : null;
+        const parentClauseId =
+          typeof clause.parent_clause_id === "string" && clause.parent_clause_id.trim()
+            ? clause.parent_clause_id.trim()
+            : "";
+        if (parentClauseId) {
+          const record = ensureChildRecord(parentClauseId, clauseId);
+          if (!record.label && functionText) {
+            record.label = functionText;
+          }
+        }
+
+        if (analysis && Array.isArray(analysis.sub_clauses)) {
+          for (const entry of analysis.sub_clauses) {
+            if (!entry || typeof entry !== "object") {
+              continue;
+            }
+            const childId =
+              typeof entry.clause_id === "string" && entry.clause_id.trim() ? entry.clause_id.trim() : "";
+            if (!childId) {
+              continue;
+            }
+            const record = ensureChildRecord(clauseId, childId);
+            if (typeof entry.label === "string" && entry.label.trim()) {
+              record.label = entry.label.trim();
+            }
+            if (typeof entry.role === "string" && entry.role.trim()) {
+              record.role = entry.role.trim();
+            }
+          }
+        }
+
         details.set(clauseId, {
           clauseId,
           functionText,
           references,
           categoryTags,
           sourceSummary,
+          parentClauseId,
+          parentSummary: "",
+          childClauses: [],
+          isGroupOnly: !!(analysis && analysis.group_only === true),
         });
+      }
+
+      for (const detail of details.values()) {
+        if (detail.parentClauseId) {
+          const parentDetail = details.get(detail.parentClauseId);
+          if (parentDetail && !detail.parentSummary) {
+            detail.parentSummary = parentDetail.functionText || "";
+          }
+        }
+      }
+
+      for (const [parentId, childMap] of childrenAccumulator.entries()) {
+        const parentDetail = details.get(parentId);
+        if (!parentDetail) {
+          continue;
+        }
+
+        const combined = [];
+        for (const childRecord of childMap.values()) {
+          const childDetail = details.get(childRecord.clauseId);
+          if (childDetail) {
+            if (!childDetail.parentClauseId) {
+              childDetail.parentClauseId = parentId;
+            }
+            if (!childDetail.parentSummary) {
+              childDetail.parentSummary = parentDetail.functionText || "";
+            }
+          }
+
+          const resolvedLabel =
+            childRecord.label || (childDetail && childDetail.functionText ? childDetail.functionText : "");
+
+          combined.push({
+            clauseId: childRecord.clauseId,
+            label: resolvedLabel,
+            role: childRecord.role || "",
+          });
+        }
+
+        parentDetail.childClauses = combined;
       }
 
       return details;
