@@ -5,6 +5,8 @@
       "display_name": "Gospel of Mark",
       "data_path": "mark.json",
       "data_url": "data/mark.json",
+      "clause_data_path": "mark.clauses.json",
+      "clause_data_url": "data/mark.clauses.json",
       "header": "ΚΑΤΑ ΜΑΡΚΟΝ",
       "source_path": "external-data/SBLGNT/data/sblgnt/text/Mark.txt"
     },
