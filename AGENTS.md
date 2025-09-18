@@ -16,6 +16,7 @@
 - Ensure **automated tests cover new or modified logic**; rely on the CI pipeline to enforce coverage.
 - Prefer adding focused unit or integration tests alongside code changes.
 - When documenting commands that are not executed by CI, include example output captured from an actual run.
+- Before finishing a task, run test coverage locally (e.g. `pytest --cov`) so low coverage can be caught before pushing changes.
 
 ## Text & Analysis Requirements
 - For any textual or analytical output, **double-check conclusions and supporting evidence** before presenting them.
