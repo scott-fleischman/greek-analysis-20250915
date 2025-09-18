@@ -105,6 +105,25 @@
         aria-live="polite"
         hidden
       >
+        <div class="clause-panel__header">
+          <div class="clause-summary" id="clause-panel-summary">
+            <p id="clause-summary-primary" class="clause-summary__primary">
+              Clause overview
+            </p>
+            <p id="clause-summary-function" class="clause-summary__function">
+              Select a highlighted clause to view its metadata.
+            </p>
+          </div>
+          <button
+            id="clause-panel-collapse"
+            class="clause-panel__collapse"
+            type="button"
+            aria-expanded="true"
+            aria-controls="clause-details"
+          >
+            Collapse clause header
+          </button>
+        </div>
         <div class="clause-panel__controls">
           <label class="clause-panel__toggle" for="clause-overlay-toggle">
             <input type="checkbox" id="clause-overlay-toggle" checked />
