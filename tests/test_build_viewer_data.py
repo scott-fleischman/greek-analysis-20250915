@@ -164,6 +164,9 @@ def test_manifest_updates_existing_entry(tmp_path: Path, sample_lines: list[str]
                         "display_name": "Legacy Mark",
                         "data_path": "mark.json",
                         "data_url": "data/mark.json",
+                        "clause_data_path": "mark.clauses.json",
+                        "clause_data_url": "data/mark.clauses.json",
+                        "custom_note": "preserve me",
                     },
                     {
                         "book_id": "acts",
@@ -201,6 +204,9 @@ def test_manifest_updates_existing_entry(tmp_path: Path, sample_lines: list[str]
     acts_entry = next(book for book in manifest["books"] if book.get("book_id") == "acts")
 
     assert mark_entry["display_name"] == "Κατὰ Μᾶρκον"
+    assert mark_entry["clause_data_path"] == "mark.clauses.json"
+    assert mark_entry["clause_data_url"] == "data/mark.clauses.json"
+    assert mark_entry["custom_note"] == "preserve me"
     assert acts_entry["data_path"] == "acts.json"
 
 
